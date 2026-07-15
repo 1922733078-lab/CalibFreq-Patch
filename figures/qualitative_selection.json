@@ -1,6 +1,0 @@
-{
-  "status": "retired",
-  "reason": "The qualitative dataset-image panel was removed to avoid third-party image-permission ambiguity.",
-  "replacement": "figures/shift_diagnostics.png",
-  "replacement_content": "Derived numerical direction, boundary, valid-interior, and inverse-registration diagnostics; no dataset image is reproduced."
-}

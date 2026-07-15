@@ -77,7 +77,7 @@ The corrected timing audit compares an actual semantic-only path against the
 complete high-pass path. On the declared Apple M4 run, complete high-pass
 construction, frequency scoring, and gating added a 1.784 ms median paired
 increment (95% category-bootstrap CI 1.642--1.901 ms), or 9.20% relative
-median overhead. The earlier frequency-score-plus-gate-only quantity is not
+median overhead against the load-inclusive semantic baseline. The earlier frequency-score-plus-gate-only quantity is not
 used as the complete branch cost.
 
 ## Data and Interpretation
