@@ -97,3 +97,9 @@ tested 224-pixel, 96-channel, 1,800-vector compact configuration.
 
 No MVTec image is redistributed in the manuscript or artifact. Figure 4 is a
 derived numerical translation diagnostic rather than a dataset-image panel.
+
+## Integrity Verification
+
+`SHA256SUMS.txt` covers versioned release files only and intentionally excludes
+itself, Git metadata, ignored caches, and bytecode. Verify a clone or extracted
+release from the repository root with `shasum -a 256 -c SHA256SUMS.txt`.
