@@ -45,11 +45,68 @@ def paired_effect_ci95(
     return tuple(np.quantile(boot, [0.025, 0.975]))
 
 
+def holm_adjust(records: list[dict], key: str = "p_value_raw") -> None:
+    """Attach monotone Holm-adjusted p values to a prespecified family."""
+    order = np.argsort([record[key] for record in records])
+    running = 0.0
+    for rank, index in enumerate(order):
+        adjusted = min(1.0, records[index][key] * (len(records) - rank))
+        running = max(running, adjusted)
+        records[index]["p_value_holm"] = running
+
+
+def paired_control_family(
+    frame: pd.DataFrame,
+    control_column: str,
+    baseline,
+    alternatives,
+    metrics,
+    repetitions: int,
+    seed: int,
+) -> list[dict]:
+    records = []
+    for metric in metrics:
+        paired = frame.pivot_table(
+            index=["category", "seed"], columns=control_column, values=metric
+        ).groupby("category").mean()
+        for alternative in alternatives:
+            differences = paired[alternative] - paired[baseline]
+            low, high = paired_effect_ci95(differences.to_numpy(float), repetitions, seed)
+            if np.allclose(differences, 0):
+                statistic, p_value = 0.0, 1.0
+            else:
+                statistic, p_value = wilcoxon(
+                    paired[alternative], paired[baseline], alternative="two-sided",
+                    zero_method="wilcox", correction=False, method="approx",
+                )
+            records.append({
+                "metric": metric, "baseline": baseline, "alternative": alternative,
+                "n_categories": int(len(differences)),
+                "mean_difference": float(differences.mean()),
+                "ci95_low": float(low), "ci95_high": float(high),
+                "wilcoxon_statistic": float(statistic), "p_value_raw": float(p_value),
+            })
+    holm_adjust(records)
+    return records
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=Path("configs/main.yaml"))
     parser.add_argument("--input", type=Path, default=Path("results/raw/experiments.jsonl"))
     parser.add_argument("--strong-baseline", type=Path, default=Path("results/raw/strong_baseline.jsonl"))
+    parser.add_argument(
+        "--multiseed-ablation", type=Path,
+        default=Path("results/raw/multiseed_ablation.jsonl"),
+    )
+    parser.add_argument(
+        "--shift-diagnostics", type=Path,
+        default=Path("results/raw/shift_diagnostics.jsonl"),
+    )
+    parser.add_argument(
+        "--wr50-gate-control", type=Path,
+        default=Path("results/raw/wr50_gate_control.jsonl"),
+    )
     parser.add_argument("--tables", type=Path, default=Path("results/tables"))
     parser.add_argument("--figures", type=Path, default=Path("figures"))
     parser.add_argument("--manifest", type=Path, default=Path("data/raw/mvtec/samples.json"))
@@ -63,6 +120,26 @@ def main() -> int:
         rows.extend(
             json.loads(line)
             for line in args.strong_baseline.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    ablation_rows = []
+    if args.multiseed_ablation.exists():
+        ablation_rows = [
+            json.loads(line)
+            for line in args.multiseed_ablation.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        rows.extend(ablation_rows)
+    if args.shift_diagnostics.exists():
+        rows.extend(
+            json.loads(line)
+            for line in args.shift_diagnostics.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    if args.wr50_gate_control.exists():
+        rows.extend(
+            json.loads(line)
+            for line in args.wr50_gate_control.read_text(encoding="utf-8").splitlines()
             if line.strip()
         )
     data = pd.DataFrame(rows)
@@ -142,6 +219,49 @@ def main() -> int:
         "tests": test_rows,
     }
     (args.tables / "significance.json").write_text(json.dumps(stats, indent=2), encoding="utf-8")
+
+    development_categories = {"bottle", "capsule", "pill", "grid", "leather", "tile"}
+    development_split_rows = []
+    main_pairs = main.pivot_table(
+        index="category", columns="method",
+        values=["image_auroc", "pixel_auroc", "pixel_ap"], aggfunc="mean",
+    )
+    for category_name in main_pairs.index:
+        for metric in ("image_auroc", "pixel_auroc", "pixel_ap"):
+            development_split_rows.append({
+                "category": category_name,
+                "historical_role": "development" if category_name in development_categories else "held_out_confirmation",
+                "metric": metric,
+                "gate_minus_patchcore": float(
+                    main_pairs.loc[category_name, (metric, "freqpatch_lite")]
+                    - main_pairs.loc[category_name, (metric, "patchcore_lite")]
+                ),
+            })
+    development_frame = pd.DataFrame(development_split_rows)
+    development_frame.to_csv(args.tables / "development_confirmation_split.csv", index=False)
+    split_inference = []
+    for role, role_group in development_frame.groupby("historical_role"):
+        for metric, metric_group in role_group.groupby("metric"):
+            differences = metric_group["gate_minus_patchcore"].to_numpy(float)
+            low, high = paired_effect_ci95(
+                differences, int(cfg["bootstrap_repetitions"]), int(cfg["seed"])
+            )
+            if np.allclose(differences, 0):
+                statistic, p_value = 0.0, 1.0
+            else:
+                statistic, p_value = wilcoxon(
+                    differences, alternative="two-sided", zero_method="wilcox",
+                    correction=False, method="approx",
+                )
+            split_inference.append({
+                "historical_role": role, "metric": metric,
+                "n_categories": int(len(differences)), "mean_difference": float(differences.mean()),
+                "ci95_low": float(low), "ci95_high": float(high),
+                "wilcoxon_statistic": float(statistic), "p_value_raw": float(p_value),
+            })
+    (args.tables / "development_confirmation_inference.json").write_text(
+        json.dumps(split_inference, indent=2), encoding="utf-8"
+    )
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))["samples"]
     manifest_rows = [
@@ -265,9 +385,123 @@ def main() -> int:
         fraction.groupby("branch_calibration_fraction")[metrics].agg(["mean", "std"]).to_csv(
             args.tables / "ablation_calibration_fraction.csv"
         )
+    multiseed_fusion = data[data.experiment == "multiseed_fusion"].copy()
+    if not multiseed_fusion.empty:
+        multiseed_fusion.groupby("method")[metrics].agg(["mean", "std"]).to_csv(
+            args.tables / "multiseed_fusion.csv"
+        )
+        comparisons = paired_control_family(
+            multiseed_fusion, "method", "proposed",
+            ("no_upper_tail", "frequency_tail_gate", "calibrated_weighted_sum"),
+            ("image_auroc", "pixel_auroc", "pixel_ap"),
+            int(cfg["bootstrap_repetitions"]), int(cfg["seed"]),
+        )
+        (args.tables / "multiseed_fusion_comparisons.json").write_text(
+            json.dumps(comparisons, indent=2), encoding="utf-8"
+        )
+    multiseed_weight = data[data.experiment == "multiseed_weight"].copy()
+    if not multiseed_weight.empty:
+        multiseed_weight.groupby("weight")[metrics].agg(["mean", "std"]).to_csv(
+            args.tables / "multiseed_weight.csv"
+        )
+        weight_comparisons = paired_control_family(
+            multiseed_weight, "weight", 0.25, (0.0,),
+            ("image_auroc", "pixel_auroc", "pixel_ap"),
+            int(cfg["bootstrap_repetitions"]), int(cfg["seed"]),
+        )
+        (args.tables / "multiseed_weight_comparisons.json").write_text(
+            json.dumps(weight_comparisons, indent=2), encoding="utf-8"
+        )
+    multiseed_upper = data[data.experiment == "multiseed_upper_quantile"].copy()
+    if not multiseed_upper.empty:
+        multiseed_upper.groupby("upper_quantile")[metrics].agg(["mean", "std"]).to_csv(
+            args.tables / "multiseed_upper_quantile.csv"
+        )
+        upper_comparisons = paired_control_family(
+            multiseed_upper, "upper_quantile", 0.995, (0.99, 0.999),
+            ("image_auroc", "pixel_auroc", "pixel_ap"),
+            int(cfg["bootstrap_repetitions"]), int(cfg["seed"]),
+        )
+        (args.tables / "multiseed_upper_quantile_comparisons.json").write_text(
+            json.dumps(upper_comparisons, indent=2), encoding="utf-8"
+        )
     robustness = data[data.experiment == "robustness"].copy()
     if not robustness.empty:
         robustness.groupby(["method", "translation_px", "brightness"])[metrics].mean().to_csv(args.tables / "robustness.csv")
+    shift_diagnostic = data[data.experiment == "shift_diagnostic"].copy()
+    if not shift_diagnostic.empty:
+        shift_metrics = [
+            "image_auroc", "image_ap", "normal_fpr_conformal",
+            "interior_image_auroc", "interior_image_ap", "interior_normal_fpr",
+            "valid_pixel_fraction",
+        ]
+        shift_diagnostic.groupby(["method", "condition"])[shift_metrics].agg(
+            ["mean", "std"]
+        ).to_csv(args.tables / "shift_diagnostics.csv")
+        figure, axes = plt.subplots(1, 2, figsize=(6.8, 2.7), constrained_layout=True)
+        direction_order = [
+            "east_constant", "west_constant", "south_constant", "north_constant",
+            "southeast_constant", "southwest_constant", "northeast_constant", "northwest_constant",
+        ]
+        direction_labels = ["E", "W", "S", "N", "SE", "SW", "NE", "NW"]
+        gated = shift_diagnostic[
+            (shift_diagnostic.method == "freqpatch_lite")
+            & shift_diagnostic.condition.isin(direction_order)
+        ]
+        grouped = gated.groupby("condition")
+        x = np.arange(len(direction_order))
+        full_values = [grouped.get_group(name).normal_fpr_conformal.mean() for name in direction_order]
+        interior_values = [grouped.get_group(name).interior_normal_fpr.mean() for name in direction_order]
+        axes[0].plot(x, full_values, "o-", color="0.1", label="Full image")
+        axes[0].plot(x, interior_values, "s--", color="0.55", label="Valid interior")
+        axes[0].set_xticks(x, direction_labels)
+        axes[0].set_ylim(0, 1.02)
+        axes[0].set_ylabel("Normal FPR")
+        axes[0].set_title("(a) Direction, gated method")
+        axes[0].legend(frameon=True, fontsize=7)
+
+        boundary_order = [
+            "southeast_constant", "southeast_reflect", "southeast_replicate",
+            "southeast_reflect_inverse_registered",
+        ]
+        boundary_labels = ["Gray", "Reflect", "Replicate", "Inverse reg."]
+        width = 0.36
+        for offset, method, color, hatch, label in (
+            (-width / 2, "patchcore_lite", "0.72", "//", "PatchCore-Lite"),
+            (width / 2, "freqpatch_lite", "0.22", "..", "CalibFreq-Patch"),
+        ):
+            subset = shift_diagnostic[
+                (shift_diagnostic.method == method)
+                & shift_diagnostic.condition.isin(boundary_order)
+            ].groupby("condition").normal_fpr_conformal.mean()
+            bars = axes[1].bar(
+                np.arange(len(boundary_order)) + offset,
+                [subset[name] for name in boundary_order], width,
+                color=color, edgecolor="black", linewidth=0.6, label=label,
+            )
+            for bar in bars:
+                bar.set_hatch(hatch)
+        axes[1].set_xticks(np.arange(len(boundary_order)), boundary_labels, rotation=20, ha="right")
+        axes[1].set_ylim(0, 1.02)
+        axes[1].set_ylabel("Normal FPR")
+        axes[1].set_title("(b) Boundary and oracle control")
+        axes[1].legend(frameon=True, fontsize=7)
+        figure.savefig(args.figures / "shift_diagnostics.pdf", bbox_inches="tight")
+        figure.savefig(args.figures / "shift_diagnostics.png", dpi=300, bbox_inches="tight")
+        plt.close(figure)
+    wr50_gate = data[data.experiment == "wr50_gate_control"].copy()
+    if not wr50_gate.empty:
+        wr50_gate.groupby("method")[metrics].agg(["mean", "std"]).to_csv(
+            args.tables / "wr50_gate_control.csv"
+        )
+        wr50_comparisons = paired_control_family(
+            wr50_gate, "method", "patchcore_wr50_compact", ("freqpatch_wr50_compact",),
+            ("image_auroc", "pixel_auroc", "pixel_ap"),
+            int(cfg["bootstrap_repetitions"]), int(cfg["seed"]),
+        )
+        (args.tables / "wr50_gate_comparisons.json").write_text(
+            json.dumps(wr50_comparisons, indent=2), encoding="utf-8"
+        )
 
     operating_rows = []
     for method, group in main.groupby("method"):

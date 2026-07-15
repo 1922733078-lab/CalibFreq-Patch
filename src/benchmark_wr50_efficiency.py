@@ -84,7 +84,7 @@ def main() -> int:
                 started = time.perf_counter()
                 tensor = load_image(sample, cfg["image_size"])[None]
                 loaded = time.perf_counter()
-                features_t, _ = extractor(tensor)
+                features_t = extractor.semantic_features(tensor)
                 extracted = time.perf_counter()
                 features = features_t.permute(0, 2, 3, 1).numpy()
                 maps = calibrate(

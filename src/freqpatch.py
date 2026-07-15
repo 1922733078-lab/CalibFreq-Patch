@@ -76,7 +76,12 @@ class FrozenFeatureExtractor:
         self.std = torch.tensor(weights.transforms().std, device=self.device).view(1, 3, 1, 1)
 
     @torch.inference_mode()
-    def __call__(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def semantic_features(self, images: torch.Tensor) -> torch.Tensor:
+        """Extract only the pretrained semantic descriptor branch.
+
+        Keeping this path separate is important for fair latency measurement:
+        a semantic-only baseline must not precompute any high-pass features.
+        """
         images = images.to(self.device)
         normalized = (images - self.mean) / self.std
         model = self.model
@@ -95,7 +100,12 @@ class FrozenFeatureExtractor:
         features = F.avg_pool2d(features, kernel_size=3, stride=1, padding=1)
         features = features.index_select(1, self.indices)
         features = F.normalize(features, p=2, dim=1)
+        return features.cpu()
 
+    @torch.inference_mode()
+    def frequency_features(self, images: torch.Tensor) -> torch.Tensor:
+        """Construct the complete luminance/high-pass/gradient branch."""
+        images = images.to(self.device)
         luminance = 0.299 * images[:, :1] + 0.587 * images[:, 1:2] + 0.114 * images[:, 2:3]
         blur1 = TF.gaussian_blur(luminance, kernel_size=[9, 9], sigma=[1.0, 1.0])
         blur2 = TF.gaussian_blur(luminance, kernel_size=[9, 9], sigma=[2.0, 2.0])
@@ -108,46 +118,84 @@ class FrozenFeatureExtractor:
         gradient = torch.sqrt(dx.square() + dy.square() + 1e-12)
         frequency = torch.cat([residual1, residual2, gradient], dim=1)
         frequency = F.adaptive_avg_pool2d(frequency, (self.grid, self.grid))
-        return features.cpu(), frequency.cpu()
+        return frequency.cpu()
+
+    @torch.inference_mode()
+    def __call__(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.semantic_features(images), self.frequency_features(images)
 
 
-def load_image(sample: Sample, image_size: int, translation: int = 0, brightness: float = 1.0) -> torch.Tensor:
+def translate_tensor(
+    tensor: torch.Tensor,
+    translation: int | tuple[int, int],
+    border_mode: str = "constant",
+    fill: float = 0.5,
+) -> torch.Tensor:
+    """Apply an exact integer translation after resizing.
+
+    ``translation`` is ``(dx, dy)``; a scalar preserves the historical
+    positive-diagonal stress condition.  Padding is explicit so constant,
+    reflect, and replicate boundaries can be compared without interpolation
+    artifacts from the translation operator itself.
+    """
+    dx, dy = (translation, translation) if isinstance(translation, int) else translation
+    dx, dy = int(dx), int(dy)
+    if dx == 0 and dy == 0:
+        return tensor
+    if border_mode not in {"constant", "reflect", "replicate"}:
+        raise ValueError(f"Unsupported translation border mode: {border_mode}")
+    left, right = max(dx, 0), max(-dx, 0)
+    top, bottom = max(dy, 0), max(-dy, 0)
+    pad = (left, right, top, bottom)
+    if border_mode == "constant":
+        padded = F.pad(tensor, pad, mode="constant", value=float(fill))
+    else:
+        padded = F.pad(tensor, pad, mode=border_mode)
+    height, width = tensor.shape[-2:]
+    x_start, y_start = max(-dx, 0), max(-dy, 0)
+    return padded[..., y_start:y_start + height, x_start:x_start + width]
+
+
+def load_image(
+    sample: Sample,
+    image_size: int,
+    translation: int | tuple[int, int] = 0,
+    brightness: float = 1.0,
+    border_mode: str = "constant",
+    registration_translation: int | tuple[int, int] = 0,
+) -> torch.Tensor:
     with Image.open(sample.path) as image:
         image = image.convert("RGB")
         image = TF.resize(image, [image_size, image_size], interpolation=InterpolationMode.BILINEAR, antialias=True)
         if brightness != 1.0:
             image = ImageEnhance.Brightness(image).enhance(brightness)
         tensor = TF.to_tensor(image)
-    if translation:
-        tensor = TF.affine(
-            tensor,
-            angle=0.0,
-            translate=[translation, translation],
-            scale=1.0,
-            shear=[0.0, 0.0],
-            interpolation=InterpolationMode.BILINEAR,
-            fill=0.5,
-        )
+    tensor = translate_tensor(tensor, translation, border_mode=border_mode, fill=0.5)
+    tensor = translate_tensor(
+        tensor, registration_translation, border_mode=border_mode, fill=0.5
+    )
     return tensor
 
 
-def load_mask(sample: Sample, image_size: int, translation: int = 0) -> np.ndarray:
+def load_mask(
+    sample: Sample,
+    image_size: int,
+    translation: int | tuple[int, int] = 0,
+    border_mode: str = "constant",
+    registration_translation: int | tuple[int, int] = 0,
+) -> np.ndarray:
     if sample.mask_path is None:
         return np.zeros((image_size, image_size), dtype=np.uint8)
     with Image.open(sample.mask_path) as mask:
         mask = mask.convert("L")
         mask = TF.resize(mask, [image_size, image_size], interpolation=InterpolationMode.NEAREST)
         tensor = TF.pil_to_tensor(mask).float() / 255.0
-    if translation:
-        tensor = TF.affine(
-            tensor,
-            angle=0.0,
-            translate=[translation, translation],
-            scale=1.0,
-            shear=[0.0, 0.0],
-            interpolation=InterpolationMode.NEAREST,
-            fill=0.0,
-        )
+    # A mask always uses zero fill even when image boundaries are reflected or
+    # replicated; no new defect-positive pixels are invented at the boundary.
+    tensor = translate_tensor(tensor, translation, border_mode="constant", fill=0.0)
+    tensor = translate_tensor(
+        tensor, registration_translation, border_mode="constant", fill=0.0
+    )
     return (tensor.squeeze(0).numpy() > 0.5).astype(np.uint8)
 
 
@@ -158,12 +206,21 @@ def extract_samples(
     batch_size: int = 8,
     translation: int = 0,
     brightness: float = 1.0,
+    border_mode: str = "constant",
+    registration_translation: int | tuple[int, int] = 0,
 ) -> dict[str, np.ndarray]:
     feature_batches: list[np.ndarray] = []
     frequency_batches: list[np.ndarray] = []
     for start in range(0, len(samples), batch_size):
         batch = torch.stack(
-            [load_image(s, image_size, translation=translation, brightness=brightness) for s in samples[start : start + batch_size]]
+            [
+                load_image(
+                    s, image_size, translation=translation, brightness=brightness,
+                    border_mode=border_mode,
+                    registration_translation=registration_translation,
+                )
+                for s in samples[start : start + batch_size]
+            ]
         )
         features, frequency = extractor(batch)
         feature_batches.append(features.permute(0, 2, 3, 1).numpy().astype(np.float32))
@@ -172,7 +229,13 @@ def extract_samples(
         "features": np.concatenate(feature_batches),
         "frequency": np.concatenate(frequency_batches),
         "labels": np.asarray([s.label for s in samples], dtype=np.uint8),
-        "masks": np.stack([load_mask(s, image_size, translation=translation) for s in samples]),
+        "masks": np.stack([
+            load_mask(
+                s, image_size, translation=translation, border_mode=border_mode,
+                registration_translation=registration_translation,
+            )
+            for s in samples
+        ]),
     }
 
 

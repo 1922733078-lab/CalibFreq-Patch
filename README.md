@@ -1,7 +1,7 @@
 # CalibFreq-Patch: Reproducible CPU Study
 
-This repository is the public experiment artifact for **Does Frequency Gating
-Improve Compact Patch-Memory Anomaly Detection? A Controlled CPU-Only Study**.
+This repository is the public experiment artifact for **Auditing a Bounded
+Frequency Gate in One Compact Patch-Memory Detector: A CPU-Only MVTec AD Case Study**.
 It evaluates a normal-calibrated, bounded frequency gate on all 15 MVTec AD
 categories. The artifact contains the implementation, fixed configurations,
 raw per-run results, derived tables, grayscale/vector figures, tests, and
@@ -10,15 +10,16 @@ redistributed.
 
 ## What Is Reproduced
 
-- five ResNet-18 controls plus a 256-channel WideResNet-50 control;
+- five ResNet-18 controls plus patch-only and gated 256-channel WideResNet-50 controls;
 - three fixed seeds for every main category-method combination;
 - disjoint fit, branch-calibration, and threshold-calibration normal sets;
 - split-conformal operating thresholds and false-alarm metrics, using an
   infinite threshold when the requested rank exceeds the calibration count;
-- fusion-form, gate-weight, tail-quantile, and calibration-size ablations;
+- three-seed fusion-form, gate-weight, and tail-quantile ablations, plus calibration-size sensitivity;
 - requested fit-count and strict total-normal-budget studies;
-- brightness/translation stress tests for PatchCore-Lite and the proposed gate;
-- three-round CPU latency, component time, parameter, memory-bank, and RSS data.
+- brightness stress tests and three-seed translation direction/boundary/interior/registration diagnostics;
+- three-round independent-path CPU latency with balanced AB/BA pairing, raw pair records,
+  component time, category-bootstrap uncertainty, parameter, memory-bank, and RSS data.
 
 ## Environment Used for the Paper
 
@@ -34,7 +35,7 @@ root can be supplied with `--data-root`.
 ## Reproduce
 
 ```bash
-pytest -q
+PYTHONPATH=src python -m unittest discover -s tests -v
 PYTHONPATH=src python src/run_experiments.py \
   --config configs/main.yaml \
   --data-root /path/to/mvtec \
@@ -43,6 +44,18 @@ PYTHONPATH=src python src/run_strong_baseline.py \
   --config configs/main.yaml \
   --data-root /path/to/mvtec \
   --output results/raw/strong_baseline.jsonl
+PYTHONPATH=src python src/run_multiseed_ablation.py \
+  --config configs/main.yaml \
+  --data-root /path/to/mvtec \
+  --output results/raw/multiseed_ablation.jsonl
+PYTHONPATH=src python src/run_shift_diagnostics.py \
+  --config configs/main.yaml \
+  --data-root /path/to/mvtec \
+  --output results/raw/shift_diagnostics.jsonl
+PYTHONPATH=src python src/run_wr50_gate_control.py \
+  --config configs/main.yaml \
+  --data-root /path/to/mvtec \
+  --output results/raw/wr50_gate_control.jsonl
 PYTHONPATH=src python src/analyze_results.py \
   --config configs/main.yaml \
   --input results/raw/experiments.jsonl \
@@ -60,6 +73,13 @@ required for a finite deterministic threshold. Smaller sets are recorded with
 the code does not replace an unattainable conformal rank with the calibration
 maximum. Boundary tests cover n = 2, 5, 9, 10, 18, and 19.
 
+The corrected timing audit compares an actual semantic-only path against the
+complete high-pass path. On the declared Apple M4 run, complete high-pass
+construction, frequency scoring, and gating added a 1.784 ms median paired
+increment (95% category-bootstrap CI 1.642--1.901 ms), or 9.20% relative
+median overhead. The earlier frequency-score-plus-gate-only quantity is not
+used as the complete branch cost.
+
 ## Data and Interpretation
 
 MVTec AD is licensed CC BY-NC-SA 4.0. Follow its official terms when obtaining
@@ -74,3 +94,6 @@ categories before the expanded run; those categories remain in the final 15.
 The final experiment is therefore an expanded full-MVTec-AD evaluation, not an
 independent preregistered confirmation. Its conclusions apply only to the
 tested 224-pixel, 96-channel, 1,800-vector compact configuration.
+
+No MVTec image is redistributed in the manuscript or artifact. Figure 4 is a
+derived numerical translation diagnostic rather than a dataset-image panel.

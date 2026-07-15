@@ -1,9 +1,19 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
-from freqpatch import conformal_upper_threshold, fuse_scores, fuse_scores_variant
+from freqpatch import (
+    FrozenFeatureExtractor,
+    classification_metrics,
+    conformal_upper_threshold,
+    fuse_scores,
+    fuse_scores_variant,
+    translate_tensor,
+)
+import torch
 from run_experiments import split_training
+from run_shift_diagnostics import interior_metrics, valid_mask
 
 
 class ProtocolTests(unittest.TestCase):
@@ -45,6 +55,58 @@ class ProtocolTests(unittest.TestCase):
             with self.subTest(alpha=alpha):
                 with self.assertRaises(ValueError):
                     conformal_upper_threshold(np.arange(20), alpha=alpha)
+
+    def test_infinite_threshold_produces_declared_abstention_metrics(self):
+        labels = np.asarray([0, 0, 1, 1], dtype=np.uint8)
+        scores = np.asarray([0.1, 0.2, 0.8, 0.9])
+        threshold, _ = conformal_upper_threshold(np.arange(9), alpha=0.05)
+        result = classification_metrics(labels, scores > threshold)
+        self.assertTrue(np.isinf(threshold))
+        self.assertEqual(result["test_false_positive"], 0)
+        self.assertEqual(result["test_true_positive"], 0)
+        self.assertEqual(result["normal_fpr_conformal"], 0.0)
+        self.assertEqual(result["image_precision_conformal"], 0.0)
+        self.assertEqual(result["image_recall_conformal"], 0.0)
+
+    def test_integer_translation_boundary_modes(self):
+        tensor = torch.arange(9, dtype=torch.float32).reshape(1, 3, 3)
+        shifted = translate_tensor(tensor, (1, 0), border_mode="constant", fill=-1.0)
+        self.assertTrue(torch.equal(shifted[0, :, 0], torch.full((3,), -1.0)))
+        self.assertTrue(torch.equal(shifted[0, :, 1:], tensor[0, :, :-1]))
+        reflected = translate_tensor(tensor, (-1, 0), border_mode="reflect")
+        self.assertEqual(reflected.shape, tensor.shape)
+        self.assertTrue(torch.equal(reflected[0, :, :2], tensor[0, :, 1:]))
+
+    def test_frequency_branch_constructs_two_gaussian_residuals(self):
+        extractor = FrozenFeatureExtractor.__new__(FrozenFeatureExtractor)
+        extractor.device = torch.device("cpu")
+        extractor.grid = 4
+        images = torch.rand(1, 3, 16, 16)
+        from torchvision.transforms import functional as transform_functional
+        with patch(
+            "freqpatch.TF.gaussian_blur", wraps=transform_functional.gaussian_blur
+        ) as blur:
+            output = extractor.frequency_features(images)
+        self.assertEqual(blur.call_count, 2)
+        self.assertEqual(tuple(output.shape), (1, 3, 4, 4))
+
+    def test_valid_interior_uses_matching_cropped_calibration_statistic(self):
+        cfg = {"image_size": 8, "score_quantile": 0.75, "threshold_alpha": 0.10}
+        labels = np.asarray([0, 0, 1, 1], dtype=np.uint8)
+        masks = np.zeros((4, 8, 8), dtype=np.uint8)
+        maps = np.zeros((4, 4, 4), dtype=np.float32)
+        maps[2:, 1:3, 1:3] = 2.0
+        threshold_maps = np.zeros((19, 4, 4), dtype=np.float32)
+        # A large value exists only in the newly exposed left boundary.  The
+        # valid-interior threshold must crop it just as the test statistic is cropped.
+        threshold_maps[:, :, 0] = 100.0
+        result = interior_metrics(
+            labels, masks, maps, threshold_maps, cfg, dx=2, dy=0, extra_margin=0
+        )
+        self.assertEqual(result["valid_pixel_fraction"], 0.75)
+        self.assertEqual(result["interior_normal_fpr"], 0.0)
+        self.assertEqual(result["interior_recall"], 1.0)
+        self.assertTrue(valid_mask(8, 2, 0)[:, :2].sum() == 0)
 
     def test_proposed_gate_is_bounded_and_backbone_preserving(self):
         deep = np.asarray([0.0, 0.8, 2.0, 4.0], dtype=np.float32)

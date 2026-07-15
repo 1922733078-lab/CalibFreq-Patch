@@ -46,7 +46,7 @@ class WideResNetPatchExtractor:
         self.std = torch.tensor(weights.transforms().std).view(1, 3, 1, 1)
 
     @torch.inference_mode()
-    def __call__(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def semantic_features(self, images: torch.Tensor) -> torch.Tensor:
         normalized = (images - self.mean) / self.std
         model = self.model
         x = model.maxpool(model.relu(model.bn1(model.conv1(normalized))))
@@ -62,7 +62,10 @@ class WideResNetPatchExtractor:
         )
         features = F.avg_pool2d(features, kernel_size=3, stride=1, padding=1)
         features = F.normalize(features.index_select(1, self.indices), p=2, dim=1)
+        return features.cpu()
 
+    @torch.inference_mode()
+    def frequency_features(self, images: torch.Tensor) -> torch.Tensor:
         luminance = 0.299 * images[:, :1] + 0.587 * images[:, 1:2] + 0.114 * images[:, 2:3]
         blur1 = TF.gaussian_blur(luminance, kernel_size=[9, 9], sigma=[1.0, 1.0])
         blur2 = TF.gaussian_blur(luminance, kernel_size=[9, 9], sigma=[2.0, 2.0])
@@ -73,7 +76,11 @@ class WideResNetPatchExtractor:
             dim=1,
         )
         frequency = F.adaptive_avg_pool2d(frequency, (self.grid, self.grid))
-        return features.cpu(), frequency.cpu()
+        return frequency.cpu()
+
+    @torch.inference_mode()
+    def __call__(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.semantic_features(images), self.frequency_features(images)
 
 
 def cache_or_extract(path: Path, samples, extractor, cfg):
