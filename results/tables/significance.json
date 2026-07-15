@@ -1,0 +1,46 @@
+{
+  "test": "two-sided Wilcoxon signed-rank on 15 category means",
+  "comparison": "CalibFreq-Patch versus PatchCore-Lite",
+  "multiplicity": "Holm correction across three prespecified ranking/localization metrics",
+  "tests": [
+    {
+      "metric": "image_auroc",
+      "n_category_pairs": 15,
+      "statistic": 16.0,
+      "p_value_raw": 0.24112136827741837,
+      "mean_difference": -0.00026770384036963005,
+      "median_difference": 0.0,
+      "mean_difference_ci_low": -0.0006894268849231397,
+      "mean_difference_ci_high": 0.0001076984035038179,
+      "categories_improved": 3,
+      "categories_tied": 5,
+      "p_value_holm": 0.7233641048322551
+    },
+    {
+      "metric": "pixel_auroc",
+      "n_category_pairs": 15,
+      "statistic": 41.0,
+      "p_value_raw": 0.30279541015625,
+      "mean_difference": 5.3174906832883134e-05,
+      "median_difference": 9.519237081923038e-07,
+      "mean_difference_ci_low": -1.9259817105657014e-05,
+      "mean_difference_ci_high": 0.0001331341612224557,
+      "categories_improved": 9,
+      "categories_tied": 0,
+      "p_value_holm": 0.7233641048322551
+    },
+    {
+      "metric": "pixel_ap",
+      "n_category_pairs": 15,
+      "statistic": 46.0,
+      "p_value_raw": 0.45428466796875,
+      "mean_difference": 0.0008845925609622148,
+      "median_difference": 1.2471940287250849e-05,
+      "mean_difference_ci_low": -0.0033688231495181283,
+      "mean_difference_ci_high": 0.004849599135670579,
+      "categories_improved": 9,
+      "categories_tied": 0,
+      "p_value_holm": 0.7233641048322551
+    }
+  ]
+}

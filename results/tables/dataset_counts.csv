@@ -1,0 +1,16 @@
+category,train_normal,test_normal,test_anomalous
+bottle,209,20,63
+cable,224,58,92
+capsule,219,23,109
+carpet,280,28,89
+grid,264,21,57
+hazelnut,391,40,70
+leather,245,32,92
+metal_nut,220,22,93
+pill,267,26,141
+screw,320,41,119
+tile,230,33,84
+toothbrush,60,12,30
+transistor,213,60,40
+wood,247,19,60
+zipper,240,32,119

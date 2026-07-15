@@ -1,0 +1,30 @@
+[
+  {
+    "category": "bottle",
+    "defect": "broken_large",
+    "test_index": 23,
+    "relative_path": "data/data_49/016-71.png",
+    "rule": "anomalous sample closest to the category median CalibFreq-Patch image score"
+  },
+  {
+    "category": "capsule",
+    "defect": "scratch",
+    "test_index": 42,
+    "relative_path": "data/data_9/021-6.png",
+    "rule": "anomalous sample closest to the category median CalibFreq-Patch image score"
+  },
+  {
+    "category": "grid",
+    "defect": "thread",
+    "test_index": 76,
+    "relative_path": "data/data_53/008-102.png",
+    "rule": "anomalous sample closest to the category median CalibFreq-Patch image score"
+  },
+  {
+    "category": "tile",
+    "defect": "oil",
+    "test_index": 111,
+    "relative_path": "data/data_24/007-51.png",
+    "rule": "anomalous sample closest to the category median CalibFreq-Patch image score"
+  }
+]

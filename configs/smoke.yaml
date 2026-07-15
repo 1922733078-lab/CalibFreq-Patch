@@ -1,0 +1,22 @@
+seed: 20260714
+seeds: [20260714]
+categories: [bottle]
+image_size: 224
+feature_grid: 28
+projection_dim: 96
+memory_ratio: 0.02
+memory_max: 1800
+knn_k: 3
+frequency_weight: 0.25
+branch_calibration_fraction: 0.15
+threshold_calibration_fraction: 0.15
+threshold_alpha: 0.05
+score_quantile: 0.995
+bootstrap_repetitions: 100
+few_shot_counts: [16]
+total_normal_budgets: [16]
+calibration_upper_quantiles: [0.995]
+calibration_fraction_ablation: [0.15]
+robustness:
+  translations: [0]
+  brightness: [1.0]

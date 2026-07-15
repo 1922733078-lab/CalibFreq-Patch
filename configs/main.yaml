@@ -1,0 +1,49 @@
+seed: 20260714
+seeds: [20260714, 20260715, 20260716]
+categories:
+  - bottle
+  - cable
+  - capsule
+  - carpet
+  - grid
+  - hazelnut
+  - leather
+  - metal_nut
+  - pill
+  - screw
+  - tile
+  - toothbrush
+  - transistor
+  - wood
+  - zipper
+image_size: 224
+feature_grid: 28
+backbone: resnet18
+feature_layers:
+  - layer1
+  - layer2
+  - layer3
+projection_dim: 96
+memory_ratio: 0.02
+memory_max: 1800
+knn_k: 3
+frequency_window: 9
+frequency_sigmas: [1.0, 2.0]
+frequency_weight: 0.25
+branch_calibration_fraction: 0.15
+threshold_calibration_fraction: 0.15
+threshold_alpha: 0.05
+score_quantile: 0.995
+bootstrap_repetitions: 5000
+few_shot_counts: [16, 32, 64, 128]
+total_normal_budgets: [16, 32, 64, 128]
+calibration_upper_quantiles: [0.99, 0.995, 0.999]
+calibration_fraction_ablation: [0.10, 0.15, 0.20]
+robustness:
+  translations: [0, 4, 8]
+  brightness: [0.85, 1.0, 1.15]
+methods:
+  - frequency_only
+  - padim_diag
+  - patchcore_lite
+  - freqpatch_lite
