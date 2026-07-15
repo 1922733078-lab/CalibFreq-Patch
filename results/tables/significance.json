@@ -1,6 +1,7 @@
 {
   "test": "two-sided Wilcoxon signed-rank on 15 category means",
   "comparison": "CalibFreq-Patch versus PatchCore-Lite",
+  "zero_and_tie_handling": "SciPy zero_method='wilcox' discards exact zero differences; method='approx' uses the normal approximation with tie correction and no continuity correction",
   "multiplicity": "Holm correction across three prespecified ranking/localization metrics",
   "tests": [
     {
@@ -20,7 +21,7 @@
       "metric": "pixel_auroc",
       "n_category_pairs": 15,
       "statistic": 41.0,
-      "p_value_raw": 0.30279541015625,
+      "p_value_raw": 0.28053090025207417,
       "mean_difference": 5.3174906832883134e-05,
       "median_difference": 9.519237081923038e-07,
       "mean_difference_ci_low": -1.9259817105657014e-05,
@@ -33,7 +34,7 @@
       "metric": "pixel_ap",
       "n_category_pairs": 15,
       "statistic": 46.0,
-      "p_value_raw": 0.45428466796875,
+      "p_value_raw": 0.42652824883677154,
       "mean_difference": 0.0008845925609622148,
       "median_difference": 1.2471940287250849e-05,
       "mean_difference_ci_low": -0.0033688231495181283,

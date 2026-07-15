@@ -109,7 +109,9 @@ def main() -> int:
             statistic, p_value = 0.0, 1.0
         else:
             statistic, p_value = wilcoxon(
-                paired["freqpatch_lite"], paired["patchcore_lite"], alternative="two-sided", method="auto"
+                paired["freqpatch_lite"], paired["patchcore_lite"],
+                alternative="two-sided", zero_method="wilcox", correction=False,
+                method="approx",
             )
         test_rows.append({
             "metric": metric,
@@ -132,6 +134,10 @@ def main() -> int:
     stats = {
         "test": f"two-sided Wilcoxon signed-rank on {main.category.nunique()} category means",
         "comparison": "CalibFreq-Patch versus PatchCore-Lite",
+        "zero_and_tie_handling": (
+            "SciPy zero_method='wilcox' discards exact zero differences; "
+            "method='approx' uses the normal approximation with tie correction and no continuity correction"
+        ),
         "multiplicity": "Holm correction across three prespecified ranking/localization metrics",
         "tests": test_rows,
     }
@@ -184,7 +190,10 @@ def main() -> int:
         )
         for bar, hatch in zip(bars, hatches):
             bar.set_hatch(hatch)
-        axis.set_xticks(range(len(order)), [METHOD_LABELS[x].replace(" (ours)", "") for x in order], rotation=52, ha="right", fontsize=6)
+        axis.set_xticks(
+            range(len(order)), [str(index + 1) for index in range(len(order))],
+            rotation=0, ha="center", fontsize=8,
+        )
         axis.set_xlabel("")
         axis.set_ylabel(title)
         axis.set_ylim(max(0.0, main[metric].min() - 0.08), 1.0)
@@ -259,6 +268,35 @@ def main() -> int:
     robustness = data[data.experiment == "robustness"].copy()
     if not robustness.empty:
         robustness.groupby(["method", "translation_px", "brightness"])[metrics].mean().to_csv(args.tables / "robustness.csv")
+
+    operating_rows = []
+    for method, group in main.groupby("method"):
+        category_level = group.groupby("category").agg(
+            normal_fpr=("normal_fpr_conformal", "mean"),
+            false_alarms_per_1000=("false_alarms_per_1000_normals", "mean"),
+        )
+        fpr_low, fpr_high = clustered_ci95(
+            group, "normal_fpr_conformal", int(cfg["bootstrap_repetitions"]), int(cfg["seed"])
+        )
+        operating_rows.append({
+            "method": METHOD_LABELS.get(method, method),
+            "macro_fpr": float(group["normal_fpr_conformal"].mean()),
+            "category_cluster_ci_low": float(fpr_low),
+            "category_cluster_ci_high": float(fpr_high),
+            "category_fpr_min": float(category_level["normal_fpr"].min()),
+            "category_fpr_q1": float(category_level["normal_fpr"].quantile(0.25)),
+            "category_fpr_median": float(category_level["normal_fpr"].median()),
+            "category_fpr_q3": float(category_level["normal_fpr"].quantile(0.75)),
+            "category_fpr_max": float(category_level["normal_fpr"].max()),
+            "macro_false_alarms_per_1000": float(group["false_alarms_per_1000_normals"].mean()),
+            "pooled_test_false_positive": int(group["test_false_positive"].sum()),
+            "pooled_test_true_negative": int(group["test_true_negative"].sum()),
+            "pooled_fpr": float(
+                group["test_false_positive"].sum()
+                / (group["test_false_positive"].sum() + group["test_true_negative"].sum())
+            ),
+        })
+    pd.DataFrame(operating_rows).to_csv(args.tables / "operating_point_uncertainty.csv", index=False)
     print(summary.to_string(index=False))
     print(json.dumps(stats, indent=2))
     return 0

@@ -36,6 +36,10 @@ def percentile_summary(values):
     array = np.asarray(values, dtype=float)
     return {
         "median_ms": float(np.median(array) * 1000),
+        "q1_ms": float(np.quantile(array, 0.25) * 1000),
+        "q3_ms": float(np.quantile(array, 0.75) * 1000),
+        "minimum_ms": float(np.min(array) * 1000),
+        "maximum_ms": float(np.max(array) * 1000),
         "p95_ms": float(np.quantile(array, 0.95) * 1000),
         "mean_ms": float(np.mean(array) * 1000),
     }
@@ -90,6 +94,7 @@ def main():
         timings = {
             "load_preprocess": [], "feature_extraction": [], "patchcore_scoring": [],
             "frequency_scoring": [], "padim_scoring": [], "agreement_gate": [],
+            "paired_freqpatch_increment": [],
             "patchcore_end_to_end": [], "freqpatch_end_to_end": [],
             "padim_end_to_end": [], "padim_gate_end_to_end": [],
         }
@@ -137,6 +142,7 @@ def main():
                     timings["frequency_scoring"].append(freq_time)
                     timings["padim_scoring"].append(padim_time)
                     timings["agreement_gate"].append(gate_time)
+                    timings["paired_freqpatch_increment"].append(freq_time + gate_time)
                     timings["patchcore_end_to_end"].append(load_time + feature_time + patch_time)
                     timings["freqpatch_end_to_end"].append(load_time + feature_time + patch_time + freq_time + gate_time)
                     timings["padim_end_to_end"].append(load_time + feature_time + padim_time)
@@ -170,6 +176,17 @@ def main():
             }
             for name in rows[0]["timings"]
         },
+    }
+    increment_medians = [
+        row["timings"]["paired_freqpatch_increment"]["median_ms"] for row in rows
+    ]
+    result["paired_increment_category_medians_ms"] = {
+        "median": float(np.median(increment_medians)),
+        "q1": float(np.quantile(increment_medians, 0.25)),
+        "q3": float(np.quantile(increment_medians, 0.75)),
+        "minimum": float(np.min(increment_medians)),
+        "maximum": float(np.max(increment_medians)),
+        "observations_per_category": int(rows[0]["timed_observations"]),
     }
     result["derived_rate_from_freqpatch_median_images_per_second"] = (
         1000.0 / result["aggregate"]["freqpatch_end_to_end"]["median_of_category_medians_ms"]

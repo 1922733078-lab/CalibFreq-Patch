@@ -179,7 +179,7 @@ def extract_samples(
 def robust_frequency_stats(frequency: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     median = np.median(frequency, axis=0)
     mad = np.median(np.abs(frequency - median[None]), axis=0)
-    floor = np.quantile(mad, 0.1, axis=(0, 1), keepdims=True)
+    floor = np.quantile(mad, 0.1, axis=(0, 1), keepdims=True, method="linear")
     return median.astype(np.float32), np.maximum(1.4826 * mad, floor + 1e-6).astype(np.float32)
 
 
@@ -191,7 +191,7 @@ def frequency_score(frequency: np.ndarray, median: np.ndarray, scale: np.ndarray
 def padim_stats(features: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     mean = features.mean(axis=0)
     std = features.std(axis=0)
-    floor = np.quantile(std, 0.1, axis=(0, 1), keepdims=True)
+    floor = np.quantile(std, 0.1, axis=(0, 1), keepdims=True, method="linear")
     return mean.astype(np.float32), np.maximum(std, floor + 1e-4).astype(np.float32)
 
 
@@ -236,7 +236,7 @@ def patchcore_score(features: np.ndarray, memory: np.ndarray, k: int = 3, chunk:
 
 def calibration_parameters(scores: np.ndarray, upper_quantile: float = 0.995) -> tuple[float, float]:
     median = float(np.median(scores))
-    upper = float(np.quantile(scores, upper_quantile))
+    upper = float(np.quantile(scores, upper_quantile, method="linear"))
     return median, max(upper - median, 1e-6)
 
 
@@ -348,11 +348,20 @@ def binary_f1(labels: np.ndarray, predictions: np.ndarray) -> float:
 
 
 def conformal_upper_threshold(scores: np.ndarray, alpha: float) -> tuple[float, int]:
-    """Finite-sample split-conformal upper quantile for anomaly scores."""
+    """Finite-sample split-conformal upper threshold for anomaly scores.
+
+    The non-randomized one-sided rank is ceil((n + 1) * (1 - alpha)).
+    When that rank exceeds n, no finite deterministic threshold can provide
+    the requested marginal error level, so the valid threshold is +infinity.
+    """
     ordered = np.sort(np.asarray(scores, dtype=np.float64).reshape(-1))
     if len(ordered) == 0:
         raise ValueError("Threshold calibration scores must not be empty")
-    rank = min(len(ordered), int(math.ceil((len(ordered) + 1) * (1.0 - alpha))))
+    if not 0.0 < alpha < 1.0:
+        raise ValueError("alpha must lie strictly between zero and one")
+    rank = int(math.ceil((len(ordered) + 1) * (1.0 - alpha)))
+    if rank > len(ordered):
+        return float("inf"), rank
     return float(ordered[rank - 1]), rank
 
 
@@ -402,10 +411,12 @@ def metrics(
         "image_ap": average_precision(labels, per_image),
         "pixel_auroc": safe_auc(masks.reshape(-1), pixel_scores.reshape(-1)),
         "pixel_ap": average_precision(masks.reshape(-1), pixel_scores.reshape(-1)),
-        "threshold": threshold,
+        "threshold": float(threshold) if np.isfinite(threshold) else None,
         "threshold_alpha": float(threshold_alpha),
         "threshold_calibration_count": int(len(calibration_image_scores)),
         "threshold_conformal_rank": int(threshold_rank),
+        "threshold_is_finite": bool(np.isfinite(threshold)),
+        "threshold_min_attainable_alpha": float(1.0 / (len(calibration_image_scores) + 1)),
         **classification_metrics(labels, predictions),
     }
     return result, per_image, pixel_scores

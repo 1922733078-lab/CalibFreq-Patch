@@ -30,6 +30,22 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(rank, 18)
         self.assertEqual(threshold, 17.0)
 
+    def test_conformal_alpha_005_small_sample_boundary(self):
+        for count in (2, 5, 9, 10, 18):
+            with self.subTest(count=count):
+                threshold, rank = conformal_upper_threshold(np.arange(count), alpha=0.05)
+                self.assertGreater(rank, count)
+                self.assertTrue(np.isinf(threshold))
+        threshold, rank = conformal_upper_threshold(np.arange(19), alpha=0.05)
+        self.assertEqual(rank, 19)
+        self.assertEqual(threshold, 18.0)
+
+    def test_conformal_rejects_invalid_alpha(self):
+        for alpha in (0.0, 1.0, -0.1, 1.1):
+            with self.subTest(alpha=alpha):
+                with self.assertRaises(ValueError):
+                    conformal_upper_threshold(np.arange(20), alpha=alpha)
+
     def test_proposed_gate_is_bounded_and_backbone_preserving(self):
         deep = np.asarray([0.0, 0.8, 2.0, 4.0], dtype=np.float32)
         freq = np.asarray([8.0, 5.0, 3.0, 9.0], dtype=np.float32)

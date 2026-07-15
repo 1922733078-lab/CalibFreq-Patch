@@ -88,7 +88,7 @@ def main():
     fig, axes = plt.subplots(len(examples), 4, figsize=(4.85, 5.25), constrained_layout=True)
     titles = ["Input", "Ground truth", "PatchCore-Lite", "CalibFreq-Patch"]
     for axis, title in zip(axes[0], titles):
-        axis.set_title(title, fontsize=7, pad=2)
+        axis.set_title(title, fontsize=8, pad=2)
     for row, (category, defect, image, mask, patch_map, proposed_map) in enumerate(examples):
         maximum = float(np.quantile(np.concatenate([patch_map.ravel(), proposed_map.ravel()]), 0.995))
         axes[row, 0].imshow(image)
@@ -97,14 +97,18 @@ def main():
         axes[row, 1].contour(mask, levels=[0.5], colors=["white"], linewidths=0.7, linestyles="dashed")
         axes[row, 2].imshow(overlay(image, patch_map, maximum))
         axes[row, 3].imshow(overlay(image, proposed_map, maximum))
-        axes[row, 0].set_ylabel(f"{category}\n{defect.replace('_', ' ')}", fontsize=6.5)
+        axes[row, 0].set_ylabel(f"{category}\n{defect.replace('_', ' ')}", fontsize=8)
         for axis in axes[row]:
             axis.set_xticks([])
             axis.set_yticks([])
             for spine in axis.spines.values():
                 spine.set_linewidth(0.45)
                 spine.set_color("#455A64")
-    fig.text(0.5, 0.004, "Median-score anomalous example per category; double black/white contour denotes the reference mask.", ha="center", fontsize=5.8)
+    fig.text(
+        0.5, 0.004,
+        "Anomalous example nearest the category median CalibFreq-Patch image score; double contour denotes the reference mask.",
+        ha="center", fontsize=7,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.output, dpi=600, bbox_inches="tight", pad_inches=0.03)
     fig.savefig(args.output.with_suffix(".pdf"), bbox_inches="tight", pad_inches=0.03)
