@@ -1,14 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this experiment artifact, please cite the accompanying paper."
-title: "Auditing a Bounded Frequency Gate in One Compact Patch-Memory Detector: Reproducible Artifact"
+title: "Normal Calibration, Threshold Allocation, and Failure Analysis in a Compact Patch-Memory Detector: Reproducible Artifact"
 type: software
 authors:
   - family-names: Xue
     given-names: Zihang
   - family-names: Zhu
     given-names: Ming
-version: 1.2.0
+version: 1.3.0
 date-released: 2026-07-16
 license: MIT
 repository-code: "https://github.com/1922733078-lab/CalibFreq-Patch"
-url: "https://github.com/1922733078-lab/CalibFreq-Patch/releases/tag/v1.2.0"
+url: "https://github.com/1922733078-lab/CalibFreq-Patch/releases/tag/v1.3.0"

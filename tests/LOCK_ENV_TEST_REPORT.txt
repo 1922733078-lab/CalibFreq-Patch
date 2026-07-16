@@ -1,0 +1,29 @@
+Environment-lock verification
+=============================
+
+Environment lock SHA-256:
+90f1ac9a2769f4b1c74eaf60bf768ae438c0ec87c4676f2b95f2bfa2558b9e37  environment-lock.txt
+
+Verification command:
+python -m pip freeze | LC_ALL=C sort
+diff against LC_ALL=C sorted environment-lock.txt
+
+Result: no differences; 32 locked distributions matched exactly.
+
+Runtime:
+Python 3.12.13
+torch 2.7.1
+torchvision 0.22.1
+numpy 2.3.1
+scipy 1.16.0
+
+Test command:
+PYTHONPATH=src python -m unittest discover -s tests -v
+
+Result:
+Ran 15 tests in 0.023s
+OK
+
+The suite includes the actual 224-input/28-grid/four-pixel conservative-interior
+geometry check in addition to the conformal-boundary, splitting, fusion, and
+translation protocol checks.

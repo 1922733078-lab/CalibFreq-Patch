@@ -1,7 +1,8 @@
 # CalibFreq-Patch: Reproducible CPU Study
 
-This repository is the public experiment artifact for **Auditing a Bounded
-Frequency Gate in One Compact Patch-Memory Detector: A CPU-Only MVTec AD Case Study**.
+This repository is the public experiment artifact for **Normal Calibration,
+Threshold Allocation, and Failure Analysis in a Compact Patch-Memory Detector:
+A CPU-Only MVTec AD Audit**.
 It evaluates a normal-calibrated, bounded frequency gate on all 15 MVTec AD
 categories. The artifact contains the implementation, fixed configurations,
 raw per-run results, derived tables, grayscale/vector figures, tests, and
@@ -17,7 +18,7 @@ redistributed.
   infinite threshold when the requested rank exceeds the calibration count;
 - three-seed fusion-form, gate-weight, and tail-quantile ablations, plus calibration-size sensitivity;
 - requested fit-count and strict total-normal-budget studies, including proportional and threshold-prioritized allocation;
-- category-level Wilcoxon and exact sign-flip inference with total/nonzero/zero-pair counts;
+- category-level Wilcoxon and exact sign-flip inference with total/nonzero/zero-pair counts, plus a 24-comparison exploratory fusion family;
 - brightness stress tests and three-seed translation direction/boundary/interior/registration diagnostics;
 - three-round independent-path CPU latency with balanced AB/BA pairing, raw pair records,
   component time, category-bootstrap uncertainty, parameter, memory-bank, and RSS data.
@@ -86,6 +87,12 @@ threshold-calibration images while retaining at least four detector-fitting
 and two branch-calibration images. It therefore tests allocation, not only
 total normal supply.
 
+The translation diagnostic scores the native 28 × 28 anomaly map. A four-pixel
+shift at 224-pixel input resolution removes one full grid cell, so the reported
+"conservative interior" is an eight-input-pixel-equivalent crop. Test and
+threshold-calibration maps use the same crop, and a diagonal shift retains
+729/784 grid cells. This geometry is covered by an explicit unit test.
+
 The corrected timing audit compares an actual semantic-only path against the
 complete high-pass path. On the declared Apple M4 run, complete high-pass
 construction, frequency scoring, and gating added a 1.784 ms median paired
@@ -107,6 +114,10 @@ categories before the expanded run; those categories remain in the final 15.
 The final experiment is therefore an expanded full-MVTec-AD evaluation, not an
 independent preregistered confirmation. Its conclusions apply only to the
 tested 224-pixel, 96-channel, 1,800-vector compact configuration.
+
+Fusion-form inference is exploratory. Holm adjustment covers all eight tested
+alternatives to the proposed gate across image AUROC, pixel AUROC, and pixel AP
+(24 comparisons); effect sizes and category-bootstrap intervals are primary.
 
 No MVTec image is redistributed in the manuscript or artifact. The downloader
 pins the Voxel51 mirror revision and produces SHA-256 manifests for every image

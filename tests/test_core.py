@@ -132,6 +132,21 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(result["interior_recall"], 1.0)
         self.assertTrue(valid_mask(8, 2, 0)[:, :2].sum() == 0)
 
+    def test_valid_interior_reports_actual_224_28_grid_geometry(self):
+        cfg = {"image_size": 224, "score_quantile": 0.995, "threshold_alpha": 0.10}
+        labels = np.asarray([0, 0, 1, 1], dtype=np.uint8)
+        masks = np.zeros((4, 224, 224), dtype=np.uint8)
+        maps = np.zeros((4, 28, 28), dtype=np.float32)
+        threshold_maps = np.zeros((19, 28, 28), dtype=np.float32)
+        result = interior_metrics(
+            labels, masks, maps, threshold_maps, cfg, dx=4, dy=4, extra_margin=0
+        )
+        self.assertEqual(result["interior_grid_valid_cells"], 27 * 27)
+        self.assertEqual(result["interior_grid_total_cells"], 28 * 28)
+        self.assertAlmostEqual(result["valid_pixel_fraction"], 729 / 784)
+        self.assertEqual(result["interior_equivalent_pixel_x0"], 8.0)
+        self.assertEqual(result["interior_equivalent_pixel_y0"], 8.0)
+
     def test_proposed_gate_is_bounded_and_backbone_preserving(self):
         deep = np.asarray([0.0, 0.8, 2.0, 4.0], dtype=np.float32)
         freq = np.asarray([8.0, 5.0, 3.0, 9.0], dtype=np.float32)

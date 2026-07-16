@@ -81,7 +81,7 @@ def main():
     ax.text(0.01, 0.96, "CalibFreq-Patch", fontsize=8.5, weight="bold", color="#263238")
 
     fig.savefig(out / "method_overview.pdf", bbox_inches="tight", pad_inches=0.03)
-    fig.savefig(out / "method_overview.png", dpi=600, bbox_inches="tight", pad_inches=0.03)
+    fig.savefig(out / "method_overview.png", dpi=1200, bbox_inches="tight", pad_inches=0.03)
     plt.close(fig)
 
 

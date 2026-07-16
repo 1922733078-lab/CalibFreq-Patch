@@ -79,13 +79,29 @@ def interior_metrics(labels, masks, maps, threshold_maps, cfg, dx, dy, extra_mar
         interior_threshold_images, cfg["threshold_alpha"]
     )
     classification = classification_metrics(labels, interior_images > threshold)
-    valid = valid_mask(cfg["image_size"], dx, dy, extra_margin)
+    # The score is evaluated on the native anomaly-map grid.  A four-pixel
+    # displacement at 224/28 geometry therefore removes one complete grid
+    # cell (an eight-input-pixel-equivalent conservative crop).  Report the
+    # valid fraction from that exact scoring region rather than from a
+    # different full-resolution mask.
+    valid_grid_cells = (x1 - x0) * (y1 - y0)
+    valid_grid_fraction = valid_grid_cells / float(grid * grid)
     return {
         "interior_image_auroc": safe_auc(labels, interior_images),
         "interior_image_ap": average_precision(labels, interior_images),
         "interior_normal_fpr": classification["normal_fpr_conformal"],
         "interior_recall": classification["image_recall_conformal"],
-        "valid_pixel_fraction": float(valid.mean()),
+        "valid_pixel_fraction": float(valid_grid_fraction),
+        "interior_grid_x0": int(x0),
+        "interior_grid_x1": int(x1),
+        "interior_grid_y0": int(y0),
+        "interior_grid_y1": int(y1),
+        "interior_grid_valid_cells": int(valid_grid_cells),
+        "interior_grid_total_cells": int(grid * grid),
+        "interior_equivalent_pixel_x0": float(x0 * cfg["image_size"] / grid),
+        "interior_equivalent_pixel_x1": float((grid - x1) * cfg["image_size"] / grid),
+        "interior_equivalent_pixel_y0": float(y0 * cfg["image_size"] / grid),
+        "interior_equivalent_pixel_y1": float((grid - y1) * cfg["image_size"] / grid),
     }
 
 

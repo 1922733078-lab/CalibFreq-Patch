@@ -354,8 +354,8 @@ def main() -> int:
         axis.xaxis.set_major_locator(MaxNLocator(nbins=5))
         axis.tick_params(axis="x", labelsize=7)
     axes[0].legend(frameon=True, fontsize=6.5, loc="upper left")
-    figure.savefig(args.figures / "main_performance.pdf", dpi=300, bbox_inches="tight")
-    figure.savefig(args.figures / "main_performance.png", dpi=300, bbox_inches="tight")
+    figure.savefig(args.figures / "main_performance.pdf", bbox_inches="tight")
+    figure.savefig(args.figures / "main_performance.png", dpi=800, bbox_inches="tight")
     plt.close(figure)
 
     few = data[data.experiment == "few_shot"].copy()
@@ -376,8 +376,8 @@ def main() -> int:
         handles, labels = axis.get_legend_handles_labels()
         axis.legend(handles, [METHOD_LABELS.get(x, x) for x in labels], frameon=True)
         axis.set(xlabel="Requested fit-normal count", ylabel="Image-level AUROC", ylim=(max(0.5, few.image_auroc.min() - 0.05), 1.0))
-        figure.savefig(args.figures / "few_shot.pdf", dpi=300, bbox_inches="tight")
-        figure.savefig(args.figures / "few_shot.png", dpi=300, bbox_inches="tight")
+        figure.savefig(args.figures / "few_shot.pdf", bbox_inches="tight")
+        figure.savefig(args.figures / "few_shot.png", dpi=800, bbox_inches="tight")
         plt.close(figure)
 
     total_budget = data[data.experiment == "total_budget"].copy()
@@ -479,7 +479,7 @@ def main() -> int:
         axes[1].set_title("(b) Frozen-threshold operation")
         axes[1].legend(frameon=True, fontsize=6.2)
         figure.savefig(args.figures / "total_normal_budget.pdf", bbox_inches="tight")
-        figure.savefig(args.figures / "total_normal_budget.png", dpi=300, bbox_inches="tight")
+        figure.savefig(args.figures / "total_normal_budget.png", dpi=800, bbox_inches="tight")
         plt.close(figure)
 
     ablation = data[data.experiment == "ablation_weight"].copy()
@@ -506,7 +506,11 @@ def main() -> int:
         )
         comparisons = paired_control_family(
             multiseed_fusion, "method", "proposed",
-            ("no_upper_tail", "frequency_tail_gate", "calibrated_weighted_sum"),
+            (
+                "raw_weighted_sum", "calibrated_weighted_sum", "calibrated_max",
+                "calibrated_min", "calibrated_product", "unbounded_agreement",
+                "no_upper_tail", "frequency_tail_gate",
+            ),
             ("image_auroc", "pixel_auroc", "pixel_ap"),
             int(cfg["bootstrap_repetitions"]), int(cfg["seed"]),
         )
@@ -601,7 +605,7 @@ def main() -> int:
         axes[1].set_title("(b) Boundary and oracle control")
         axes[1].legend(frameon=True, fontsize=7)
         figure.savefig(args.figures / "shift_diagnostics.pdf", bbox_inches="tight")
-        figure.savefig(args.figures / "shift_diagnostics.png", dpi=300, bbox_inches="tight")
+        figure.savefig(args.figures / "shift_diagnostics.png", dpi=800, bbox_inches="tight")
         plt.close(figure)
     wr50_gate = data[data.experiment == "wr50_gate_control"].copy()
     if not wr50_gate.empty:
