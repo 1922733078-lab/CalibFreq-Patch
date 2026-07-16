@@ -42,8 +42,16 @@ def split_training(
     total_budget: int | None = None,
     branch_fraction: float = 0.15,
     threshold_fraction: float = 0.15,
+    threshold_min_count: int | None = None,
 ):
-    """Create disjoint fit, branch-calibration, and threshold-calibration sets."""
+    """Create disjoint fit, branch-calibration, and threshold-calibration sets.
+
+    ``threshold_min_count`` activates a threshold-prioritized allocation for a
+    strict total budget.  The requested threshold count is guaranteed whenever
+    at least four fitting and two branch-calibration images can still be kept;
+    otherwise the original proportional allocation is retained and the caller
+    can report that the priority target was infeasible for that budget.
+    """
     rng = np.random.default_rng(seed)
     indices = rng.permutation(len(samples))
     if total_budget is not None:
@@ -53,6 +61,14 @@ def split_training(
         minimum = 8
     branch_count = max(minimum, int(round(branch_fraction * len(indices))))
     threshold_count = max(minimum, int(round(threshold_fraction * len(indices))))
+    if total_budget is not None and threshold_min_count is not None:
+        requested = int(threshold_min_count)
+        if requested < 2:
+            raise ValueError("threshold_min_count must be at least 2")
+        if len(indices) >= requested + 6:
+            threshold_count = requested
+            branch_count = min(branch_count, len(indices) - threshold_count - 4)
+            branch_count = max(2, branch_count)
     if branch_count + threshold_count > len(indices) - 4:
         branch_count = max(2, (len(indices) - 4) // 2)
         threshold_count = max(2, len(indices) - 4 - branch_count)

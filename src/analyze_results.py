@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -18,7 +19,7 @@ from scipy.stats import wilcoxon
 METHOD_LABELS = {
     "frequency_only": "Frequency only",
     "padim_diag": "PaDiM-Diag",
-    "patchcore_lite": "PatchCore-Lite",
+    "patchcore_lite": "Compact R18-PM",
     "freqpatch_lite": "CalibFreq-Patch (ours)",
     "padim_freq_gate": "PaDiM-Diag + gate",
     "patchcore_wr50_compact": "PatchCore-WR50-256",
@@ -43,6 +44,19 @@ def paired_effect_ci95(
     sampled = rng.integers(0, len(differences), size=(repetitions, len(differences)))
     boot = differences[sampled].mean(axis=1)
     return tuple(np.quantile(boot, [0.025, 0.975]))
+
+
+def exact_sign_flip_pvalue(differences: np.ndarray) -> float:
+    """Exact two-sided sign-flip randomization p value for category effects."""
+    values = np.asarray(differences, dtype=float)
+    if len(values) > 20:
+        raise ValueError("Exact sign-flip enumeration is limited to at most 20 pairs")
+    observed = abs(float(values.mean()))
+    assignments = np.arange(1 << len(values), dtype=np.uint32)[:, None]
+    bits = (assignments >> np.arange(len(values), dtype=np.uint32)) & 1
+    signs = bits.astype(np.float64) * 2.0 - 1.0
+    permuted = np.abs((signs * values).mean(axis=1))
+    return float(np.mean(permuted >= observed - 1e-15))
 
 
 def holm_adjust(records: list[dict], key: str = "p_value_raw") -> None:
@@ -82,10 +96,17 @@ def paired_control_family(
             records.append({
                 "metric": metric, "baseline": baseline, "alternative": alternative,
                 "n_categories": int(len(differences)),
+                "n_nonzero_differences": int((~np.isclose(differences, 0)).sum()),
+                "n_zero_differences": int(np.isclose(differences, 0).sum()),
                 "mean_difference": float(differences.mean()),
                 "ci95_low": float(low), "ci95_high": float(high),
                 "wilcoxon_statistic": float(statistic), "p_value_raw": float(p_value),
+                "sign_flip_p_value_raw": exact_sign_flip_pvalue(differences.to_numpy(float)),
             })
+    holm_adjust(records)
+    holm_adjust(records, key="sign_flip_p_value_raw")
+    for record in records:
+        record["sign_flip_p_value_holm"] = record.pop("p_value_holm")
     holm_adjust(records)
     return records
 
@@ -106,6 +127,10 @@ def main() -> int:
     parser.add_argument(
         "--wr50-gate-control", type=Path,
         default=Path("results/raw/wr50_gate_control.jsonl"),
+    )
+    parser.add_argument(
+        "--threshold-priority", type=Path,
+        default=Path("results/raw/threshold_priority.jsonl"),
     )
     parser.add_argument("--tables", type=Path, default=Path("results/tables"))
     parser.add_argument("--figures", type=Path, default=Path("figures"))
@@ -140,6 +165,12 @@ def main() -> int:
         rows.extend(
             json.loads(line)
             for line in args.wr50_gate_control.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    if args.threshold_priority.exists():
+        rows.extend(
+            json.loads(line)
+            for line in args.threshold_priority.read_text(encoding="utf-8").splitlines()
             if line.strip()
         )
     data = pd.DataFrame(rows)
@@ -193,8 +224,11 @@ def main() -> int:
         test_rows.append({
             "metric": metric,
             "n_category_pairs": int(len(paired)),
+            "n_nonzero_differences": int((~np.isclose(differences, 0)).sum()),
+            "n_zero_differences": int(np.isclose(differences, 0).sum()),
             "statistic": float(statistic),
             "p_value_raw": float(p_value),
+            "sign_flip_p_value_raw": exact_sign_flip_pvalue(differences.to_numpy(float)),
             "mean_difference": float(differences.mean()),
             "median_difference": float(differences.median()),
             "mean_difference_ci_low": float(ci_low),
@@ -202,18 +236,21 @@ def main() -> int:
             "categories_improved": int((differences > 0).sum()),
             "categories_tied": int(np.isclose(differences, 0).sum()),
         })
-    order = np.argsort([row["p_value_raw"] for row in test_rows])
-    running = 0.0
-    for rank, index in enumerate(order):
-        adjusted = min(1.0, test_rows[index]["p_value_raw"] * (len(test_rows) - rank))
-        running = max(running, adjusted)
-        test_rows[index]["p_value_holm"] = running
+    holm_adjust(test_rows)
+    holm_adjust(test_rows, key="sign_flip_p_value_raw")
+    for row in test_rows:
+        row["sign_flip_p_value_holm"] = row.pop("p_value_holm")
+    holm_adjust(test_rows)
     stats = {
         "test": f"two-sided Wilcoxon signed-rank on {main.category.nunique()} category means",
-        "comparison": "CalibFreq-Patch versus PatchCore-Lite",
+        "comparison": "CalibFreq-Patch versus Compact R18-PM",
         "zero_and_tie_handling": (
             "SciPy zero_method='wilcox' discards exact zero differences; "
             "method='approx' uses the normal approximation with tie correction and no continuity correction"
+        ),
+        "robustness_test": (
+            "Exact two-sided sign-flip randomization over all 2^15 category-level sign assignments; "
+            "zero differences are retained and contribute zero under every assignment"
         ),
         "multiplicity": "Holm correction across three prespecified ranking/localization metrics",
         "tests": test_rows,
@@ -284,39 +321,39 @@ def main() -> int:
     pd.DataFrame(dataset_table).sort_values("category").to_csv(args.tables / "dataset_counts.csv", index=False)
 
     sns.set_theme(context="paper", style="whitegrid", font_scale=1.05)
-    order = [
-        "frequency_only", "padim_diag", "padim_freq_gate",
-        "patchcore_wr50_compact", "patchcore_lite", "freqpatch_lite",
+    figure, axes = plt.subplots(1, 3, figsize=(6.8, 2.45), constrained_layout=True)
+    plotted = [
+        ("image_auroc", "Image AUROC"),
+        ("pixel_auroc", "Pixel AUROC"),
+        ("pixel_ap", "Pixel AP"),
     ]
-    order = [method for method in order if method in set(main.method)]
-    grayscale = ["0.86", "0.72", "0.60", "0.48", "0.34", "0.16"][:len(order)]
-    hatches = ["", "//", "xx", "++", "..", "\\\\"][:len(order)]
-    figure, axes = plt.subplots(1, 3, figsize=(4.85, 2.35), constrained_layout=True)
-    plotted = [("image_auroc", "Image AUROC"), ("pixel_auroc", "Pixel AUROC"), ("pixel_ap", "Pixel AP")]
     for axis, (metric, title) in zip(axes, plotted):
-        values, lows, highs = [], [], []
-        for method in order:
-            group = main[main.method == method]
-            mean = float(group[metric].mean())
-            low, high = clustered_ci95(
-                group, metric, int(cfg["bootstrap_repetitions"]), int(cfg["seed"])
-            )
-            values.append(mean)
-            lows.append(mean - low)
-            highs.append(high - mean)
-        bars = axis.bar(
-            range(len(order)), values, yerr=np.asarray([lows, highs]), color=grayscale,
-            edgecolor="black", linewidth=0.7, capsize=2,
+        paired = main.pivot_table(
+            index="category", columns="method", values=metric, aggfunc="mean"
         )
-        for bar, hatch in zip(bars, hatches):
-            bar.set_hatch(hatch)
-        axis.set_xticks(
-            range(len(order)), [str(index + 1) for index in range(len(order))],
-            rotation=0, ha="center", fontsize=8,
+        differences = (paired["freqpatch_lite"] - paired["patchcore_lite"]).sort_index()
+        low, high = paired_effect_ci95(
+            differences.to_numpy(float), int(cfg["bootstrap_repetitions"]), int(cfg["seed"])
         )
-        axis.set_xlabel("")
-        axis.set_ylabel(title)
-        axis.set_ylim(max(0.0, main[metric].min() - 0.08), 1.0)
+        jitter = np.linspace(-0.20, 0.20, len(differences))
+        axis.axvline(0.0, color="0.30", linewidth=0.8, linestyle="--")
+        axis.scatter(
+            differences.to_numpy(float), jitter, s=17, facecolor="0.72",
+            edgecolor="black", linewidth=0.4, zorder=3,
+        )
+        mean = float(differences.mean())
+        axis.errorbar(
+            mean, 0.42, xerr=np.asarray([[mean - low], [high - mean]]),
+            fmt="D", color="black", capsize=3, markersize=4.5, linewidth=1.1,
+            label="Mean and 95% category CI",
+        )
+        axis.set_title(title, fontsize=8.5)
+        axis.set_ylim(-0.30, 0.58)
+        axis.set_yticks([])
+        axis.set_xlabel("Gate - compact baseline")
+        axis.xaxis.set_major_locator(MaxNLocator(nbins=5))
+        axis.tick_params(axis="x", labelsize=7)
+    axes[0].legend(frameon=True, fontsize=6.5, loc="upper left")
     figure.savefig(args.figures / "main_performance.pdf", dpi=300, bbox_inches="tight")
     figure.savefig(args.figures / "main_performance.png", dpi=300, bbox_inches="tight")
     plt.close(figure)
@@ -352,18 +389,95 @@ def main() -> int:
             ["normal_budget", "category"]
         )[["fit_images", "branch_calibration_images", "threshold_calibration_images"]].first()
         split_counts.to_csv(args.tables / "total_normal_budget_splits.csv")
-        figure, axis = plt.subplots(figsize=(4.4, 3.1), constrained_layout=True)
-        for method, marker, linestyle, color in (
-            ("patchcore_lite", "s", "--", "0.45"),
-            ("freqpatch_lite", "o", "-", "0.05"),
+
+    threshold_priority = data[data.experiment == "threshold_priority"].copy()
+    if not threshold_priority.empty:
+        summary_rows = []
+        for (method, budget, strategy), group in threshold_priority.groupby(
+            ["method", "normal_budget_requested", "allocation_strategy"]
         ):
-            grouped = total_budget[total_budget.method == method].groupby("normal_budget")["pixel_ap"]
-            axis.plot(
-                grouped.mean().index, grouped.mean().values, marker=marker,
-                linestyle=linestyle, color=color, label=METHOD_LABELS[method],
+            row = {
+                "method": method,
+                "normal_budget_requested": int(budget),
+                "allocation_strategy": strategy,
+                "finite_categories": int(
+                    group.groupby("category")["threshold_is_finite"].all().sum()
+                ),
+                "category_seed_rows": int(len(group)),
+            }
+            for metric in (
+                "image_auroc", "pixel_ap", "normal_fpr_conformal",
+                "image_recall_conformal",
+            ):
+                low, high = clustered_ci95(
+                    group, metric, int(cfg["bootstrap_repetitions"]), int(cfg["seed"])
+                )
+                row[f"{metric}_mean"] = float(group[metric].mean())
+                row[f"{metric}_ci_low"] = float(low)
+                row[f"{metric}_ci_high"] = float(high)
+            summary_rows.append(row)
+        priority_summary = pd.DataFrame(summary_rows).sort_values(
+            ["normal_budget_requested", "allocation_strategy", "method"]
+        )
+        priority_summary.to_csv(args.tables / "threshold_priority_summary.csv", index=False)
+        threshold_priority.sort_values(
+            ["normal_budget_requested", "allocation_strategy", "category", "seed", "method"]
+        ).to_csv(args.tables / "threshold_priority_per_category_seed.csv", index=False)
+        threshold_priority.groupby(
+            ["normal_budget_requested", "allocation_strategy", "category"]
+        )[[
+            "normal_budget_achieved", "fit_images", "branch_calibration_images",
+            "threshold_calibration_images", "priority_achieved",
+        ]].first().to_csv(args.tables / "threshold_priority_splits.csv")
+
+        figure, axes = plt.subplots(1, 2, figsize=(6.8, 2.75), constrained_layout=True)
+        style = {
+            ("patchcore_lite", "proportional"): ("s", "--", "0.55", "Compact, 70/15/15"),
+            ("freqpatch_lite", "proportional"): ("o", "-", "0.15", "Gate, 70/15/15"),
+            ("patchcore_lite", "threshold_prioritized"): ("^", ":", "0.55", "Compact, threshold-first"),
+            ("freqpatch_lite", "threshold_prioritized"): ("D", "-.", "0.15", "Gate, threshold-first"),
+        }
+        for (method, strategy), (marker, linestyle, color, label) in style.items():
+            subset = priority_summary[
+                (priority_summary.method == method)
+                & (priority_summary.allocation_strategy == strategy)
+            ].sort_values("normal_budget_requested")
+            x = subset.normal_budget_requested.to_numpy(float)
+            y = subset.pixel_ap_mean.to_numpy(float)
+            axes[0].errorbar(
+                x, y,
+                yerr=np.asarray([
+                    y - subset.pixel_ap_ci_low.to_numpy(float),
+                    subset.pixel_ap_ci_high.to_numpy(float) - y,
+                ]),
+                marker=marker, linestyle=linestyle, color=color, capsize=2,
+                linewidth=1.0, markersize=4, label=label,
             )
-        axis.set(xlabel="Total normal-image budget", ylabel="Pixel AP")
-        axis.legend(frameon=True)
+        axes[0].set(xlabel="Total normal-image budget", ylabel="Pixel AP")
+        axes[0].set_title("(a) Ranking with category 95% CI")
+        axes[0].legend(frameon=True, fontsize=6.2)
+
+        op_styles = {
+            ("normal_fpr_conformal", "proportional"): ("o", "-", "0.15", "FPR, 70/15/15"),
+            ("normal_fpr_conformal", "threshold_prioritized"): ("D", "-.", "0.15", "FPR, threshold-first"),
+            ("image_recall_conformal", "proportional"): ("s", "--", "0.58", "Recall, 70/15/15"),
+            ("image_recall_conformal", "threshold_prioritized"): ("^", ":", "0.58", "Recall, threshold-first"),
+        }
+        gate = priority_summary[priority_summary.method == "freqpatch_lite"]
+        for (metric, strategy), (marker, linestyle, color, label) in op_styles.items():
+            subset = gate[gate.allocation_strategy == strategy].sort_values(
+                "normal_budget_requested"
+            )
+            axes[1].plot(
+                subset.normal_budget_requested, subset[f"{metric}_mean"],
+                marker=marker, linestyle=linestyle, color=color, linewidth=1.0,
+                markersize=4, label=label,
+            )
+        axes[1].set(
+            xlabel="Total normal-image budget", ylabel="Macro rate", ylim=(-0.02, 1.02)
+        )
+        axes[1].set_title("(b) Frozen-threshold operation")
+        axes[1].legend(frameon=True, fontsize=6.2)
         figure.savefig(args.figures / "total_normal_budget.pdf", bbox_inches="tight")
         figure.savefig(args.figures / "total_normal_budget.png", dpi=300, bbox_inches="tight")
         plt.close(figure)
@@ -467,7 +581,7 @@ def main() -> int:
         boundary_labels = ["Gray", "Reflect", "Replicate", "Inverse reg."]
         width = 0.36
         for offset, method, color, hatch, label in (
-            (-width / 2, "patchcore_lite", "0.72", "//", "PatchCore-Lite"),
+            (-width / 2, "patchcore_lite", "0.72", "//", "Compact R18-PM"),
             (width / 2, "freqpatch_lite", "0.22", "..", "CalibFreq-Patch"),
         ):
             subset = shift_diagnostic[

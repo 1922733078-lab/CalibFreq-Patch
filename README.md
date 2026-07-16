@@ -16,7 +16,8 @@ redistributed.
 - split-conformal operating thresholds and false-alarm metrics, using an
   infinite threshold when the requested rank exceeds the calibration count;
 - three-seed fusion-form, gate-weight, and tail-quantile ablations, plus calibration-size sensitivity;
-- requested fit-count and strict total-normal-budget studies;
+- requested fit-count and strict total-normal-budget studies, including proportional and threshold-prioritized allocation;
+- category-level Wilcoxon and exact sign-flip inference with total/nonzero/zero-pair counts;
 - brightness stress tests and three-seed translation direction/boundary/interior/registration diagnostics;
 - three-round independent-path CPU latency with balanced AB/BA pairing, raw pair records,
   component time, category-bootstrap uncertainty, parameter, memory-bank, and RSS data.
@@ -28,7 +29,8 @@ redistributed.
 - PyTorch 2.7.1 and torchvision 0.22.1
 - at most eight PyTorch CPU threads
 
-Create an environment and install the packages listed in `requirements.txt`.
+Create an environment and install the direct packages listed in `requirements.txt`;
+`environment-lock.txt` records the complete resolved paper environment.
 The official MVTec AD files must be placed under `data/raw/mvtec`, or another
 root can be supplied with `--data-root`.
 
@@ -56,6 +58,11 @@ PYTHONPATH=src python src/run_wr50_gate_control.py \
   --config configs/main.yaml \
   --data-root /path/to/mvtec \
   --output results/raw/wr50_gate_control.jsonl
+PYTHONPATH=src python src/run_threshold_priority.py \
+  --config configs/main.yaml \
+  --data-root /path/to/mvtec \
+  --output results/raw/threshold_priority.jsonl --fresh
+python src/make_dataset_checksums.py --data-root /path/to/mvtec
 PYTHONPATH=src python src/analyze_results.py \
   --config configs/main.yaml \
   --input results/raw/experiments.jsonl \
@@ -72,6 +79,12 @@ required for a finite deterministic threshold. Smaller sets are recorded with
 `threshold: null`, `threshold_is_finite: false`, and zero predicted alarms;
 the code does not replace an unattainable conformal rank with the calibration
 maximum. Boundary tests cover n = 2, 5, 9, 10, 18, and 19.
+
+The strict-budget sensitivity compares the original 70/15/15 allocation with
+a threshold-prioritized allocation. When feasible, the latter reserves 19
+threshold-calibration images while retaining at least four detector-fitting
+and two branch-calibration images. It therefore tests allocation, not only
+total normal supply.
 
 The corrected timing audit compares an actual semantic-only path against the
 complete high-pass path. On the declared Apple M4 run, complete high-pass
@@ -95,8 +108,19 @@ The final experiment is therefore an expanded full-MVTec-AD evaluation, not an
 independent preregistered confirmation. Its conclusions apply only to the
 tested 224-pixel, 96-channel, 1,800-vector compact configuration.
 
-No MVTec image is redistributed in the manuscript or artifact. Figure 4 is a
-derived numerical translation diagnostic rather than a dataset-image panel.
+No MVTec image is redistributed in the manuscript or artifact. The downloader
+pins the Voxel51 mirror revision and produces SHA-256 manifests for every image
+and mask used. Those hashes identify the mirror bytes used; they do not claim
+byte identity with the separately licensed official MVTec archive. Figure 4 is
+a derived numerical translation diagnostic rather than a dataset-image panel.
+The delivered checksum list is `data/mvtec_mirror_SHA256SUMS.txt`, with revision,
+counts, and manifest digests in `data/mvtec_mirror_metadata.json`.
+
+## License
+
+The experiment software is released under the MIT License; see `LICENSE`.
+MVTec AD images and pretrained model weights are not included and remain under
+their respective terms.
 
 ## Integrity Verification
 

@@ -4,11 +4,15 @@
     "baseline": "patchcore_wr50_compact",
     "alternative": "freqpatch_wr50_compact",
     "n_categories": 15,
+    "n_nonzero_differences": 13,
+    "n_zero_differences": 2,
     "mean_difference": -0.0003552300803929468,
     "ci95_low": -0.001466599377817953,
     "ci95_high": 0.0005511037509350846,
     "wilcoxon_statistic": 39.0,
     "p_value_raw": 0.6496440323317323,
+    "sign_flip_p_value_raw": 0.59228515625,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 0.9206031127588377
   },
   {
@@ -16,11 +20,15 @@
     "baseline": "patchcore_wr50_compact",
     "alternative": "freqpatch_wr50_compact",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 3.720180510991729e-05,
     "ci95_low": -5.103464444981942e-05,
     "ci95_high": 0.0001407364769102248,
     "wilcoxon_statistic": 47.0,
     "p_value_raw": 0.46030155637941883,
+    "sign_flip_p_value_raw": 0.52105712890625,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 0.9206031127588377
   },
   {
@@ -28,11 +36,15 @@
     "baseline": "patchcore_wr50_compact",
     "alternative": "freqpatch_wr50_compact",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 0.0026406739564977014,
     "ci95_low": -0.004964905442144153,
     "ci95_high": 0.011432262490097909,
     "wilcoxon_statistic": 40.0,
     "p_value_raw": 0.25598851167013814,
+    "sign_flip_p_value_raw": 0.52484130859375,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 0.7679655350104144
   }
 ]

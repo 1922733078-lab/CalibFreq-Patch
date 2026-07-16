@@ -4,11 +4,15 @@
     "baseline": "proposed",
     "alternative": "no_upper_tail",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 0.0012457693138266687,
     "ci95_low": -0.003174382217484302,
     "ci95_high": 0.006517937863775784,
     "wilcoxon_statistic": 53.0,
     "p_value_raw": 0.6909447568979337,
+    "sign_flip_p_value_raw": 0.688720703125,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   },
   {
@@ -16,11 +20,15 @@
     "baseline": "proposed",
     "alternative": "frequency_tail_gate",
     "n_categories": 15,
+    "n_nonzero_differences": 9,
+    "n_zero_differences": 6,
     "mean_difference": -0.001035437584419759,
     "ci95_low": -0.0026959519178494135,
     "ci95_high": 0.00018174991706391378,
     "wilcoxon_statistic": 11.0,
     "p_value_raw": 0.1730709208049953,
+    "sign_flip_p_value_raw": 0.2734375,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   },
   {
@@ -28,11 +36,15 @@
     "baseline": "proposed",
     "alternative": "calibrated_weighted_sum",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": -0.012166746071915683,
     "ci95_low": -0.029722040334471535,
     "ci95_high": 0.0037894054057780666,
     "wilcoxon_statistic": 38.0,
     "p_value_raw": 0.21147639221681047,
+    "sign_flip_p_value_raw": 0.2012939453125,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   },
   {
@@ -40,11 +52,15 @@
     "baseline": "proposed",
     "alternative": "no_upper_tail",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 0.0011171857883628252,
     "ci95_low": 0.0006128145297022787,
     "ci95_high": 0.0016608961688501665,
     "wilcoxon_statistic": 3.0,
     "p_value_raw": 0.0012063162374293,
+    "sign_flip_p_value_raw": 0.00030517578125,
+    "sign_flip_p_value_holm": 0.00274658203125,
     "p_value_holm": 0.0108568461368637
   },
   {
@@ -52,11 +68,15 @@
     "baseline": "proposed",
     "alternative": "frequency_tail_gate",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 6.286285888285429e-05,
     "ci95_low": -2.7517231201927098e-05,
     "ci95_high": 0.00017917891512457957,
     "wilcoxon_statistic": 45.0,
     "p_value_raw": 0.39424586721077726,
+    "sign_flip_p_value_raw": 0.32763671875,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   },
   {
@@ -64,11 +84,15 @@
     "baseline": "proposed",
     "alternative": "calibrated_weighted_sum",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 0.0019084216012941488,
     "ci95_low": -0.0010238770799859557,
     "ci95_high": 0.004951143411479803,
     "wilcoxon_statistic": 32.0,
     "p_value_raw": 0.11176874513967605,
+    "sign_flip_p_value_raw": 0.233642578125,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 0.7823812159777324
   },
   {
@@ -76,11 +100,15 @@
     "baseline": "proposed",
     "alternative": "no_upper_tail",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": 0.009313558350331175,
     "ci95_low": 0.004304395589668098,
     "ci95_high": 0.015807666839110442,
     "wilcoxon_statistic": 7.0,
     "p_value_raw": 0.0026107767405259366,
+    "sign_flip_p_value_raw": 0.001220703125,
+    "sign_flip_p_value_holm": 0.009765625,
     "p_value_holm": 0.020886213924207492
   },
   {
@@ -88,11 +116,15 @@
     "baseline": "proposed",
     "alternative": "frequency_tail_gate",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": -0.0007348423881543157,
     "ci95_low": -0.00237391265854151,
     "ci95_high": 0.0005791647684907695,
     "wilcoxon_statistic": 59.0,
     "p_value_raw": 0.9547075542182767,
+    "sign_flip_p_value_raw": 0.37139892578125,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   },
   {
@@ -100,11 +132,15 @@
     "baseline": "proposed",
     "alternative": "calibrated_weighted_sum",
     "n_categories": 15,
+    "n_nonzero_differences": 15,
+    "n_zero_differences": 0,
     "mean_difference": -0.008796160689730296,
     "ci95_low": -0.025918502944107333,
     "ci95_high": 0.006903238726298211,
     "wilcoxon_statistic": 51.0,
     "p_value_raw": 0.6092350686367863,
+    "sign_flip_p_value_raw": 0.325439453125,
+    "sign_flip_p_value_holm": 1.0,
     "p_value_holm": 1.0
   }
 ]

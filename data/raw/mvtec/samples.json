@@ -1,5 +1,9 @@
 {
   "source": "https://huggingface.co/datasets/Voxel51/mvtec-ad",
+  "mirror_revision": "30a183a3b96e3aef953f230784b123b719b09d97",
+  "mirror_manifest_url": "https://hf-mirror.com/datasets/Voxel51/mvtec-ad/resolve/30a183a3b96e3aef953f230784b123b719b09d97/samples.json",
+  "mirror_manifest_sha256": "dbbbb94cee2ddec28c1eef318733d07df4d59b9cc066e62e6aeef386c1db281d",
+  "verification_scope": "Pinned mirror manifest and downloaded-byte checksums; no byte-level comparison with the separately licensed official MVTec archive was performed.",
   "license": "CC BY-NC-SA 4.0",
   "samples": [
     {

@@ -1,0 +1,11 @@
+{
+  "source": "https://huggingface.co/datasets/Voxel51/mvtec-ad",
+  "revision": "30a183a3b96e3aef953f230784b123b719b09d97",
+  "pinned_mirror_manifest_sha256": "dbbbb94cee2ddec28c1eef318733d07df4d59b9cc066e62e6aeef386c1db281d",
+  "local_augmented_manifest_sha256": "f647f8c4dcf5604c81ceac767f21e49b2d38f1d79c41962dbb923182570f6c10",
+  "file_checksum_manifest": "mvtec_mirror_SHA256SUMS.txt",
+  "file_checksum_manifest_sha256": "dfdc7d0990e18718d2a7f6f1938a3e5d3edad61ffda81b668819a9afbcf3e271",
+  "image_files": 5354,
+  "mask_files": 1258,
+  "verification_scope": "The hashes identify the pinned Voxel51 mirror bytes used. No byte-level comparison with the separately licensed official MVTec archive was performed."
+}

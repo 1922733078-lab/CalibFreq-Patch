@@ -14,6 +14,7 @@ from freqpatch import (
 import torch
 from run_experiments import split_training
 from run_shift_diagnostics import interior_metrics, valid_mask
+from analyze_results import exact_sign_flip_pvalue
 
 
 class ProtocolTests(unittest.TestCase):
@@ -34,6 +35,29 @@ class ProtocolTests(unittest.TestCase):
         fit, branch, threshold = split_training(list(range(100)), 11, total_budget=16)
         self.assertEqual(len(fit) + len(branch) + len(threshold), 16)
         self.assertGreaterEqual(len(fit), 4)
+
+    def test_threshold_prioritized_split_guarantees_19_when_feasible(self):
+        fit, branch, threshold = split_training(
+            list(range(100)), 11, total_budget=32, threshold_min_count=19
+        )
+        self.assertEqual((len(fit), len(branch), len(threshold)), (8, 5, 19))
+        self.assertEqual(len(fit) + len(branch) + len(threshold), 32)
+        self.assertEqual(set(fit) & set(branch), set())
+        self.assertEqual(set(fit) & set(threshold), set())
+        self.assertEqual(set(branch) & set(threshold), set())
+
+    def test_threshold_priority_falls_back_when_budget_is_infeasible(self):
+        fit, branch, threshold = split_training(
+            list(range(100)), 11, total_budget=16, threshold_min_count=19
+        )
+        self.assertEqual(len(fit) + len(branch) + len(threshold), 16)
+        self.assertLess(len(threshold), 19)
+        self.assertGreaterEqual(len(fit), 4)
+
+    def test_exact_sign_flip_retains_zero_pairs(self):
+        self.assertAlmostEqual(
+            exact_sign_flip_pvalue(np.asarray([1.0, 1.0, 1.0, 0.0])), 0.25
+        )
 
     def test_conformal_quantile_rank(self):
         threshold, rank = conformal_upper_threshold(np.arange(19), alpha=0.10)
