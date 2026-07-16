@@ -91,6 +91,10 @@ def interior_metrics(labels, masks, maps, threshold_maps, cfg, dx, dy, extra_mar
         "interior_image_ap": average_precision(labels, interior_images),
         "interior_normal_fpr": classification["normal_fpr_conformal"],
         "interior_recall": classification["image_recall_conformal"],
+        "valid_grid_fraction": float(valid_grid_fraction),
+        # Backward-compatible alias retained for v1.3.0 consumers.  Despite
+        # its historical name, this is the fraction of native anomaly-grid
+        # cells scored, not a fraction of 224 x 224 input pixels.
         "valid_pixel_fraction": float(valid_grid_fraction),
         "interior_grid_x0": int(x0),
         "interior_grid_x1": int(x1),

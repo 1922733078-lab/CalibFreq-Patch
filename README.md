@@ -91,7 +91,11 @@ The translation diagnostic scores the native 28 × 28 anomaly map. A four-pixel
 shift at 224-pixel input resolution removes one full grid cell, so the reported
 "conservative interior" is an eight-input-pixel-equivalent crop. Test and
 threshold-calibration maps use the same crop, and a diagonal shift retains
-729/784 grid cells. This geometry is covered by an explicit unit test.
+729/784 grid cells. The raw output field `valid_grid_fraction` reports this
+native-grid fraction. The historical `valid_pixel_fraction` field is retained
+only as a deprecated, value-identical compatibility alias; it is not computed
+from a 224 × 224 input-pixel mask. This geometry and alias equality are covered
+by explicit unit tests.
 
 The corrected timing audit compares an actual semantic-only path against the
 complete high-pass path. On the declared Apple M4 run, complete high-pass
@@ -126,6 +130,11 @@ byte identity with the separately licensed official MVTec archive. Figure 4 is
 a derived numerical translation diagnostic rather than a dataset-image panel.
 The delivered checksum list is `data/mvtec_mirror_SHA256SUMS.txt`, with revision,
 counts, and manifest digests in `data/mvtec_mirror_metadata.json`.
+
+Pretrained weights are likewise not redistributed. Their exact torchvision
+enum, official URL, cache filename, byte count, and expected SHA-256 are pinned
+in `data/pretrained_weights_metadata.json`. Verify downloaded files against
+that metadata before an end-to-end reproduction.
 
 ## License
 

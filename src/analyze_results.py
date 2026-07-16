@@ -345,7 +345,7 @@ def main() -> int:
         axis.errorbar(
             mean, 0.42, xerr=np.asarray([[mean - low], [high - mean]]),
             fmt="D", color="black", capsize=3, markersize=4.5, linewidth=1.1,
-            label="Mean and 95% category CI",
+            label="Mean + 95% composition sensitivity interval",
         )
         axis.set_title(title, fontsize=8.5)
         axis.set_ylim(-0.30, 0.58)
@@ -454,7 +454,7 @@ def main() -> int:
                 linewidth=1.0, markersize=4, label=label,
             )
         axes[0].set(xlabel="Total normal-image budget", ylabel="Pixel AP")
-        axes[0].set_title("(a) Ranking with category 95% CI")
+        axes[0].set_title("(a) 95% composition sensitivity intervals")
         axes[0].legend(frameon=True, fontsize=6.2)
 
         op_styles = {
@@ -551,7 +551,7 @@ def main() -> int:
         shift_metrics = [
             "image_auroc", "image_ap", "normal_fpr_conformal",
             "interior_image_auroc", "interior_image_ap", "interior_normal_fpr",
-            "valid_pixel_fraction",
+            "valid_grid_fraction", "valid_pixel_fraction",
         ]
         shift_diagnostic.groupby(["method", "condition"])[shift_metrics].agg(
             ["mean", "std"]

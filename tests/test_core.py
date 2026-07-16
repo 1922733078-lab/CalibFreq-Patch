@@ -127,7 +127,8 @@ class ProtocolTests(unittest.TestCase):
         result = interior_metrics(
             labels, masks, maps, threshold_maps, cfg, dx=2, dy=0, extra_margin=0
         )
-        self.assertEqual(result["valid_pixel_fraction"], 0.75)
+        self.assertEqual(result["valid_grid_fraction"], 0.75)
+        self.assertEqual(result["valid_pixel_fraction"], result["valid_grid_fraction"])
         self.assertEqual(result["interior_normal_fpr"], 0.0)
         self.assertEqual(result["interior_recall"], 1.0)
         self.assertTrue(valid_mask(8, 2, 0)[:, :2].sum() == 0)
@@ -143,7 +144,8 @@ class ProtocolTests(unittest.TestCase):
         )
         self.assertEqual(result["interior_grid_valid_cells"], 27 * 27)
         self.assertEqual(result["interior_grid_total_cells"], 28 * 28)
-        self.assertAlmostEqual(result["valid_pixel_fraction"], 729 / 784)
+        self.assertAlmostEqual(result["valid_grid_fraction"], 729 / 784)
+        self.assertEqual(result["valid_pixel_fraction"], result["valid_grid_fraction"])
         self.assertEqual(result["interior_equivalent_pixel_x0"], 8.0)
         self.assertEqual(result["interior_equivalent_pixel_y0"], 8.0)
 

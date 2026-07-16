@@ -21,9 +21,10 @@ Test command:
 PYTHONPATH=src python -m unittest discover -s tests -v
 
 Result:
-Ran 15 tests in 0.023s
+Ran 15 tests in 0.018s
 OK
 
 The suite includes the actual 224-input/28-grid/four-pixel conservative-interior
-geometry check in addition to the conformal-boundary, splitting, fusion, and
-translation protocol checks.
+geometry check and verifies that `valid_grid_fraction` equals the deprecated
+`valid_pixel_fraction` compatibility alias, in addition to the conformal-boundary,
+splitting, fusion, and translation protocol checks.

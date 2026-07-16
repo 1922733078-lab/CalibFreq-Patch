@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "torchvision_version": "0.22.1",
+  "description": "Expected upstream pretrained-weight identities used by the frozen experiments; files are not redistributed.",
+  "weights": [
+    {
+      "model": "resnet18",
+      "enum": "ResNet18_Weights.IMAGENET1K_V1",
+      "filename": "resnet18-f37072fd.pth",
+      "url": "https://download.pytorch.org/models/resnet18-f37072fd.pth",
+      "size_bytes": 46830571,
+      "sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec"
+    },
+    {
+      "model": "wide_resnet50_2",
+      "enum": "Wide_ResNet50_2_Weights.IMAGENET1K_V2",
+      "filename": "wide_resnet50_2-9ba9bcbe.pth",
+      "url": "https://download.pytorch.org/models/wide_resnet50_2-9ba9bcbe.pth",
+      "size_bytes": 275905729,
+      "sha256": "9ba9bcbebc349d733a72eb7608143fd754e4689ac8d8ce2916ca0bdff6443950"
+    }
+  ],
+  "verification": "SHA-256 and byte counts were recomputed from the exact cached files used by the frozen run; URLs and enum mappings were checked against torchvision 0.22.1 source."
+}
