@@ -137,6 +137,15 @@ enum, official URL, cache filename, byte count, and expected SHA-256 are pinned
 in `data/pretrained_weights_metadata.json`. Verify downloaded files against
 that metadata before an end-to-end reproduction.
 
+## Artifact Identity and Manuscript Detail Map
+
+Release identity, the tag target, public-asset size and SHA-256, environment
+versions, dataset and pretrained-weight byte identities, raw/derived evidence
+locations, and compatibility-field notes are consolidated in
+[`ARTIFACT_IDENTITY.md`](ARTIFACT_IDENTITY.md). This keeps granular
+reproducibility metadata public and auditable without duplicating it throughout
+the manuscript narrative.
+
 ## License
 
 The experiment software is released under the MIT License; see `LICENSE`.
@@ -145,6 +154,9 @@ their respective terms.
 
 ## Integrity Verification
 
-`SHA256SUMS.txt` covers versioned release files only and intentionally excludes
-itself, Git metadata, ignored caches, and bytecode. Verify a clone or extracted
-release from the repository root with `shasum -a 256 -c SHA256SUMS.txt`.
+`SHA256SUMS.txt` is the frozen `v1.3.2` release manifest. It covers versioned
+release files only and intentionally excludes itself, Git metadata, ignored
+caches, and bytecode. Check out tag `v1.3.2` or extract its public release asset,
+then verify from that root with `shasum -a 256 -c SHA256SUMS.txt`. Later
+documentation-only commits on the default branch are not part of the frozen
+paper artifact.
