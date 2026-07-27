@@ -4,6 +4,20 @@ This tag is the frozen reproducible artifact for the manuscript **A
 Calibration-Aware Reliability Audit of Frequency Gating for Industrial
 Anomaly Detection**.
 
+## Immutable archive identity
+
+| Field | Value |
+|---|---|
+| Tag target | `a609800ddd84d18a0874bc3eb11ec527815a47df` |
+| Release asset | `CalibFreq-Patch-v1.4.0.zip` |
+| Asset size | 2,515,341 bytes |
+| Asset SHA-256 | `5b0422ba2323beab48d334c8f312cfdf4e024a02597eb6164468d5f4cc1bcc9b` |
+| GitHub release | <https://github.com/1922733078-lab/CalibFreq-Patch/releases/tag/v1.4.0> |
+| Zenodo version DOI | <https://doi.org/10.5281/zenodo.21628584> |
+| Zenodo concept DOI | <https://doi.org/10.5281/zenodo.21628583> |
+
+The GitHub and Zenodo archives contain the same 2,515,341-byte ZIP file.
+
 ## Frozen evidence
 
 The tag fixes the complete repository state, including code, the primary
@@ -30,7 +44,7 @@ not contain image pixels.
 ## Dataset redistribution boundary
 
 No MVTec AD image or defect-mask pixel array is stored in this repository or
-release. `data/raw/mvtec/samples.json` contains metadata and relative paths
+either archive. `data/raw/mvtec/samples.json` contains metadata and relative paths
 only; the checksum manifest identifies externally obtained bytes without
 redistributing them. Repository figures are numerical/derived plots. The PRL
 manuscript may display a small attributed qualitative panel under the dataset

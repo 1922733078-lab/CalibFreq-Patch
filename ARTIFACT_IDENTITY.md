@@ -3,10 +3,21 @@
 ## Frozen PRL release
 
 The reproducible artifact used by the Pattern Recognition Letters manuscript
-is frozen at release `v1.4.0` (2026-07-27). The immutable tag target, release
-asset size, SHA-256, and any archival DOI are recorded on the GitHub release
-page and, after publication, in the documentation-only commit on the default
-branch. The frozen tag is not retargeted by later documentation changes.
+is frozen at release `v1.4.0` (2026-07-27):
+
+| Field | Frozen value |
+|---|---|
+| Git tag | `v1.4.0` |
+| Tag target | `a609800ddd84d18a0874bc3eb11ec527815a47df` |
+| Release asset | `CalibFreq-Patch-v1.4.0.zip` |
+| Asset size | 2,515,341 bytes |
+| Asset SHA-256 | `5b0422ba2323beab48d334c8f312cfdf4e024a02597eb6164468d5f4cc1bcc9b` |
+| GitHub release | <https://github.com/1922733078-lab/CalibFreq-Patch/releases/tag/v1.4.0> |
+| Version DOI | <https://doi.org/10.5281/zenodo.21628584> |
+| Concept DOI | <https://doi.org/10.5281/zenodo.21628583> |
+
+The Zenodo record contains the byte-identical release asset. The immutable
+tag is not retargeted by this or later documentation-only changes.
 
 The release-specific configuration, result-table hashes, qualitative
 selection record, and redistribution boundary are documented in

@@ -12,5 +12,6 @@ authors:
 version: 1.4.0
 date-released: 2026-07-27
 license: MIT
+doi: "10.5281/zenodo.21628584"
 repository-code: "https://github.com/1922733078-lab/CalibFreq-Patch"
 url: "https://github.com/1922733078-lab/CalibFreq-Patch/releases/tag/v1.4.0"

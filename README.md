@@ -149,6 +149,11 @@ the manuscript narrative.
 
 The PRL release maps the fixed configuration, primary result tables, and qualitative selection record in [`PRL_RELEASE.md`](PRL_RELEASE.md). The selection record contains paths and numerical scores only; no MVTec image or mask pixels are redistributed.
 
+The frozen release is archived at Zenodo under version DOI
+[`10.5281/zenodo.21628584`](https://doi.org/10.5281/zenodo.21628584); the
+concept DOI for all versions is
+[`10.5281/zenodo.21628583`](https://doi.org/10.5281/zenodo.21628583).
+
 ## License
 
 The experiment software is released under the MIT License; see `LICENSE`.
