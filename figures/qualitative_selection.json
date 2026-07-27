@@ -1,0 +1,66 @@
+[
+  {
+    "case": "Well-localized anomaly",
+    "category": "leather",
+    "defect": "glue",
+    "image_path": "data/data_40/001-76.png",
+    "mask_path": "fields/defect_mask/defect_mask_9/001_mask-55.png",
+    "image_score": 8.122970581054688,
+    "threshold": 2.45367169380188,
+    "pixel_auroc": 0.9998641560407036,
+    "pixel_ap": 0.9855089090747491,
+    "translation": [
+      0,
+      0
+    ],
+    "border_mode": "constant"
+  },
+  {
+    "case": "Missed / poorly localized anomaly",
+    "category": "pill",
+    "defect": "crack",
+    "image_path": "data/data_15/001-28.png",
+    "mask_path": "fields/defect_mask/defect_mask_3/001_mask-19.png",
+    "image_score": 0.8888566493988037,
+    "threshold": 1.4394211769104004,
+    "pixel_auroc": 0.5396779810270983,
+    "pixel_ap": 0.004272970074990703,
+    "translation": [
+      0,
+      0
+    ],
+    "border_mode": "constant"
+  },
+  {
+    "case": "Nominal false alarm",
+    "category": "zipper",
+    "defect": "good",
+    "image_path": "data/data_21/027-8.png",
+    "mask_path": null,
+    "image_score": 3.6633384227752686,
+    "threshold": 1.7743884325027466,
+    "pixel_auroc": null,
+    "pixel_ap": 0.0,
+    "translation": [
+      0,
+      0
+    ],
+    "border_mode": "constant"
+  },
+  {
+    "case": "Shift-induced nominal false alarm",
+    "category": "zipper",
+    "defect": "good",
+    "image_path": "data/data_20/029-8.png",
+    "mask_path": null,
+    "image_score": 10.338249206542969,
+    "threshold": 1.7743884325027466,
+    "pixel_auroc": null,
+    "pixel_ap": 0.0,
+    "translation": [
+      4,
+      4
+    ],
+    "border_mode": "constant"
+  }
+]

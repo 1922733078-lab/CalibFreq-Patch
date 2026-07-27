@@ -1,8 +1,7 @@
 # CalibFreq-Patch: Reproducible CPU Study
 
-This repository is the public experiment artifact for **Normal Calibration,
-Threshold Allocation, and Failure Analysis in a Compact Patch-Memory Detector:
-A CPU-Only MVTec AD Audit**.
+This repository is the public experiment artifact for **A Calibration-Aware
+Reliability Audit of Frequency Gating for Industrial Anomaly Detection**.
 It evaluates a normal-calibrated, bounded frequency gate on all 15 MVTec AD
 categories. The artifact contains the implementation, fixed configurations,
 raw per-run results, derived tables, grayscale/vector figures, tests, and
@@ -124,7 +123,7 @@ Fusion-form inference is exploratory. Holm adjustment covers all eight tested
 alternatives to the proposed gate across image AUROC, pixel AUROC, and pixel AP
 (24 comparisons); effect sizes and category-bootstrap intervals are primary.
 
-No MVTec image is redistributed in the manuscript or artifact. The downloader
+No MVTec image is redistributed in this public artifact. The PRL manuscript uses a small attributed qualitative panel, but those third-party image pixels are not included in this repository or release. The downloader
 pins the Voxel51 mirror revision and produces SHA-256 manifests for every image
 and mask used. Those hashes identify the mirror bytes used; they do not claim
 byte identity with the separately licensed official MVTec archive. Figure 4 is
@@ -146,6 +145,10 @@ locations, and compatibility-field notes are consolidated in
 reproducibility metadata public and auditable without duplicating it throughout
 the manuscript narrative.
 
+## PRL v1.4.0 Freeze
+
+The PRL release maps the fixed configuration, primary result tables, and qualitative selection record in [`PRL_RELEASE.md`](PRL_RELEASE.md). The selection record contains paths and numerical scores only; no MVTec image or mask pixels are redistributed.
+
 ## License
 
 The experiment software is released under the MIT License; see `LICENSE`.
@@ -154,9 +157,9 @@ their respective terms.
 
 ## Integrity Verification
 
-`SHA256SUMS.txt` is the frozen `v1.3.2` release manifest. It covers versioned
+`SHA256SUMS.txt` is the frozen `v1.4.0` release manifest. It covers versioned
 release files only and intentionally excludes itself, Git metadata, ignored
-caches, and bytecode. Check out tag `v1.3.2` or extract its public release asset,
+caches, and bytecode. Check out tag `v1.4.0` or extract its public release asset,
 then verify from that root with `shasum -a 256 -c SHA256SUMS.txt`. Later
 documentation-only commits on the default branch are not part of the frozen
 paper artifact.
